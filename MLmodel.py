@@ -39,9 +39,13 @@ from sklearn.metrics import accuracy_score
 # pick_in.close()
 
             # Loading Data
-pick_in = open('datafile.pickle', 'rb')
+pick_in = open('featurefile.pickle', 'rb')
 data = pickle.load(pick_in)
 pick_in.close()
+print("Number of samples:", len(data))
+if len(data) > 0:
+    print("First feature shape:", np.array(data[0][0]).shape)
+    print("First label:", data[0][1])
 
 features = []
 labels = []
@@ -58,7 +62,7 @@ xtrain, xtest, ytrain, ytest = train_test_split(features, labels, test_size=0.25
 # model = SVC(C=1.0, kernel='poly', gamma='auto')
 # model.fit(xtrain, ytrain)
 
-                #Save the model
+#                 #Save the model
 # pick = open('svm_model.pickle', 'wb')
 # pickle.dump(model, pick)
 # pick.close()
@@ -79,3 +83,8 @@ print('Prediction is:', categories[prediction[0]])
 gonadal_stage = xtest[0].reshape(64, 64)
 plt.imshow(gonadal_stage, cmap='gray')
 plt.show()
+
+#Image Classification using SVM
+
+#confusion matrix
+#Classification report
