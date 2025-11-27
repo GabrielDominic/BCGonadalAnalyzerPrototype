@@ -6,7 +6,7 @@ import pickle
 import random
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.svm import SVC
+from sklearn.svm import SVC, LinearSVC
 from sklearn.metrics import accuracy_score
 
 
@@ -39,13 +39,13 @@ from sklearn.metrics import accuracy_score
 # pick_in.close()
 
             # Loading Data
-pick_in = open('featurefile.pickle', 'rb')
+pick_in = open('mfeaturefile.pickle', 'rb')
 data = pickle.load(pick_in)
 pick_in.close()
-# print("Number of samples:", len(data))
-# if len(data) > 0:
-#     print("First feature shape:", np.array(data[0][0]).shape)
-#     print("First label:", data[0][1])
+print("Number of samples:", len(data))
+if len(data) > 0:
+    print("First feature shape:", np.array(data[0][0]).shape)
+    print("First label:", data[0][1])
 
 features = []
 labels = []
@@ -59,7 +59,7 @@ for feature, label in data:
                 #Training
 xtrain, xtest, ytrain, ytest = train_test_split(features, labels, test_size=0.25)
 
-model = SVC(C=1.0, kernel='poly', gamma='auto')
+model = LinearSVC()
 model.fit(xtrain, ytrain)
 
 #                 #Save the model
