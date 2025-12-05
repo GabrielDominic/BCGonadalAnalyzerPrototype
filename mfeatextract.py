@@ -122,7 +122,7 @@ def extract_morph_features(img_gray):
 
 ## #Data Preparation
 dir = 'C:\\GitProjects\\BCGonadalAnalyzerPrototype\\imagedataset'
-categories = ['spawning', 'spent']
+categories = ['developing','maturing','spawning', 'spent']
 
 data = []
 feature_vectors = []
@@ -152,9 +152,13 @@ for category in categories:
             gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
             glcm_feat = extract_glcm(gray)
+            print(f'GLCM features for {img_path}')
             lbp_feat = extract_lbp(gray)
+            print(f'LBP features for {img_path}')
             hsv_feat = extract_hsv_hist(img)
+            print(f'HSV Histogram features for {img_path}')
             morph_feat = extract_morph_features(gray)
+            print(f'Morphological features for {img_path}')
 
             full_feature = np.hstack([glcm_feat, lbp_feat, hsv_feat, morph_feat])
             labels.append(label)
