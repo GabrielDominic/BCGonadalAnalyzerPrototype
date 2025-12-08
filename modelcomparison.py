@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 categories = ['developing', 'maturing', 'spawning', 'spent']
 
 # Load saved features
-pick_in = open('femalefeaturefile.pickle', 'rb')
+pick_in = open('completemalefeaturefile.pickle', 'rb')
 data = pickle.load(pick_in)
 pick_in.close()
 print("Number of samples:", len(data))
@@ -110,11 +110,11 @@ lr_accuracy = cross_val_score(lr_model, xtrain, ytrain, cv=kf, scoring='accuracy
 mlp_accuracy = cross_val_score(mlp_model, xtrain, ytrain, cv=kf, scoring='accuracy')
 
 #Precision scores
-svc_precision = cross_val_score(svc_model, xtrain, ytrain, cv=kf, scoring='precision_macro')
-rf_precision = cross_val_score(rf_model, xtrain, ytrain, cv=kf, scoring='precision_macro')
-knn_precision = cross_val_score(knn_model, xtrain, ytrain, cv=kf, scoring='precision_macro')
-lr_precision = cross_val_score(lr_model, xtrain, ytrain, cv=kf, scoring='precision_macro')
-mlp_precision = cross_val_score(mlp_model, xtrain, ytrain, cv=kf, scoring='precision_macro')
+svc_precision = cross_val_score(svc_model, xtrain, ytrain, cv=kf, scoring='precision_weighted')
+rf_precision = cross_val_score(rf_model, xtrain, ytrain, cv=kf, scoring='precision_weighted')
+knn_precision = cross_val_score(knn_model, xtrain, ytrain, cv=kf, scoring='precision_weighted')
+lr_precision = cross_val_score(lr_model, xtrain, ytrain, cv=kf, scoring='precision_weighted')
+mlp_precision = cross_val_score(mlp_model, xtrain, ytrain, cv=kf, scoring='precision_weighted')
 
 #Recall Scores
 svc_recall = cross_val_score(svc_model, xtrain, ytrain, cv=kf, scoring='recall_macro')

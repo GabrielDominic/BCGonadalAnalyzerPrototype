@@ -41,25 +41,25 @@ print("Loaded X.shape:", X.shape, "y.shape:", y.shape)
 
 # Train/test split
 xtrain, xtest, ytrain, ytest, ftrain, ftest = train_test_split(
-    X, y, files, test_size=0.25, random_state=42, stratify=y
+    X, y, files, test_size=0.20, random_state=42, stratify=y
 )
 
 pipe = Pipeline([
     ('scaler', StandardScaler()),
     ('pca', PCA(n_components=0.95, svd_solver='full', random_state=42)),
-    ('SVC', SVC(kernel='rbf', C=10, gamma='scale', random_state=42, probability=True, class_weight='balanced'))
+    ('MLP', MLPClassifier(hidden_layer_sizes=(1000), max_iter=1000, random_state=42))
 ])
 # # # # #Scale
-# scaler = StandardScaler()
-# x_train_scaled = scaler.fit_transform(xtrain)
-# x_test_scaled = scaler.transform(xtest)
+scaler = StandardScaler()
+x_train_scaled = scaler.fit_transform(xtrain)
+x_test_scaled = scaler.transform(xtest)
 
 # # # #PCA
-# pca = PCA(n_components=0.95, svd_solver='full', random_state=42)
-# pca.fit(x_train_scaled)
-# xtrain_pca = pca.transform(x_train_scaled)
-# xtest_pca = pca.transform(x_test_scaled)
-# print("PCA n_components:", pca.n_components_)
+pca = PCA(n_components=0.95, svd_solver='full', random_state=42)
+pca.fit(x_train_scaled)
+xtrain_pca = pca.transform(x_train_scaled)
+xtest_pca = pca.transform(x_test_scaled)
+print("PCA n_components:", pca.n_components_)
 
 categories = ['developing','maturing','spawning', 'spent']
 
@@ -67,7 +67,7 @@ categories = ['developing','maturing','spawning', 'spent']
 pipe.fit(xtrain, ytrain)
 
 # # Save model
-# with open('svm_model.pickle', 'wb') as pf:
+# with open('LR_model.pickle', 'wb') as pf:
 #     pickle.dump(pipe, pf)
 
 # Evaluate
@@ -82,7 +82,7 @@ print("Accuracy:", acc)
 print("Prediction is: ", categories[pred[0]])
 
 # # # # Show an example prediction (first test sample)
-idx = 7
+idx = 6
 
 pred_label = pred[idx]
 true_label = categories[ytest[idx]]
