@@ -6,17 +6,18 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, make_scorer, precision_score, recall_score, f1_score, roc_auc_score
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold, cross_val_score
+from imblearn.over_sampling import SMOTE
+from imblearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
 
 categories = ['developing', 'maturing', 'spawning', 'spent']
 
 # Load saved features
-pick_in = open('completemalefeaturefile.pickle', 'rb')
+pick_in = open('completefemalefeaturefile.pickle', 'rb')
 data = pickle.load(pick_in)
 pick_in.close()
 print("Number of samples:", len(data))
@@ -39,54 +40,58 @@ y = np.array(y, dtype=np.int32)
 
 print("Loaded X.shape:", X.shape, "y.shape:", y.shape)
 
-unique, counts = np.unique(y, return_counts=True)
-print(dict(zip(unique, counts)))
-
 # Train/test split
 xtrain, xtest, ytrain, ytest, ftrain, ftest = train_test_split(
     X, y, files, test_size=0.20, random_state=42, stratify=y
 )
 
-# # #Scale
-scaler = StandardScaler()
-x_train_scaled = scaler.fit_transform(xtrain)
-x_test_scaled = scaler.transform(xtest)
+print("Class distribution:", dict(zip(*np.unique(ytrain, return_counts=True))))
 
-# #PCA
-pca = PCA(n_components=0.95, svd_solver='full', random_state=42)
-pca.fit(x_train_scaled)
-xtrain_pca = pca.transform(x_train_scaled)
-xtest_pca = pca.transform(x_test_scaled)
-print("PCA n_components:", pca.n_components_)
+# # # #Scale
+# scaler = StandardScaler()
+# x_train_scaled = scaler.fit_transform(xtrain)
+# x_test_scaled = scaler.transform(xtest)
+
+# # #PCA
+# pca = PCA(n_components=0.95, svd_solver='full', random_state=42)
+# pca.fit(x_train_scaled)
+# xtrain_pca = pca.transform(x_train_scaled)
+# xtest_pca = pca.transform(x_test_scaled)
+# print("PCA n_components:", pca.n_components_)
 
 svc_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (n_components=0.95, svd_solver='full', random_state=42)),
-    ('SVC', SVC (kernel='linear', C=1, random_state=42, probability=True, class_weight='balanced'))
+    ('pca', PCA (n_components=0.99, svd_solver='full', random_state=42)),
+    ('smote', SMOTE(random_state=42)),
+    ('SVC', SVC (kernel='linear', C=1, random_state=42, probability=True))
 ])
 
 rf_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (n_components=0.95, svd_solver='full', random_state=42)),
-    ('Random Forest', RandomForestClassifier(n_estimators=200, max_depth=10, random_state=42, class_weight='balanced'))
+    ('pca', PCA (n_components=0.99, svd_solver='full', random_state=42)),
+    ('smote', SMOTE(random_state=42)),
+    ('Random Forest', RandomForestClassifier(n_estimators=200, max_depth=10, random_state=42))
 ])
 
 knn_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (n_components=0.95, svd_solver='full', random_state=42)),
+    ('pca', PCA (n_components=0.99, svd_solver='full', random_state=42)),
+    ('smote', SMOTE(random_state=42)),
     ('KNN', KNeighborsClassifier(n_neighbors=5))
 ])
 
 lr_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (n_components=0.95, svd_solver='full', random_state=42)),
-    ('Logistic Regression', LogisticRegression(max_iter=200, random_state=42, class_weight='balanced'))
+    ('pca', PCA (n_components=0.99, svd_solver='full', random_state=42)),
+    ('smote', SMOTE(random_state=42)),
+    ('Logistic Regression', LogisticRegression(max_iter=200, random_state=42))
 ])
 
 mlp_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (n_components=0.95, svd_solver='full', random_state=42)),
-    ('MLP', MLPClassifier(hidden_layer_sizes=(1000), max_iter=1000, random_state=42))
+    ('pca', PCA (n_components=0.99, svd_solver='full', random_state=42)),
+    ('smote', SMOTE(random_state=42)),
+    ('MLP', MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=1000, random_state=42))
 ])
 
 # # Train SVM
@@ -101,6 +106,9 @@ mlp_model = Pipeline([
 #     pickle.dump(pipe, pf)
 
 kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+precision_weighted = make_scorer(precision_score, average='weighted', zero_division=0)
+recall_macro = make_scorer(recall_score, average='macro', zero_division=0)
+f1_weighted = make_scorer(f1_score, average='weighted', zero_division=0)
 
 #Accuracy Scores
 svc_accuracy = cross_val_score(svc_model, xtrain, ytrain, cv=kf, scoring='accuracy')
@@ -110,11 +118,11 @@ lr_accuracy = cross_val_score(lr_model, xtrain, ytrain, cv=kf, scoring='accuracy
 mlp_accuracy = cross_val_score(mlp_model, xtrain, ytrain, cv=kf, scoring='accuracy')
 
 #Precision scores
-svc_precision = cross_val_score(svc_model, xtrain, ytrain, cv=kf, scoring='precision_weighted')
-rf_precision = cross_val_score(rf_model, xtrain, ytrain, cv=kf, scoring='precision_weighted')
-knn_precision = cross_val_score(knn_model, xtrain, ytrain, cv=kf, scoring='precision_weighted')
-lr_precision = cross_val_score(lr_model, xtrain, ytrain, cv=kf, scoring='precision_weighted')
-mlp_precision = cross_val_score(mlp_model, xtrain, ytrain, cv=kf, scoring='precision_weighted')
+svc_precision = cross_val_score(svc_model, xtrain, ytrain, cv=kf, scoring=precision_weighted)
+rf_precision = cross_val_score(rf_model, xtrain, ytrain, cv=kf, scoring=precision_weighted)
+knn_precision = cross_val_score(knn_model, xtrain, ytrain, cv=kf, scoring=precision_weighted)
+lr_precision = cross_val_score(lr_model, xtrain, ytrain, cv=kf, scoring=precision_weighted)
+mlp_precision = cross_val_score(mlp_model, xtrain, ytrain, cv=kf, scoring=precision_weighted)
 
 #Recall Scores
 svc_recall = cross_val_score(svc_model, xtrain, ytrain, cv=kf, scoring='recall_macro')
@@ -131,15 +139,15 @@ lr_f1 = cross_val_score(lr_model, xtrain, ytrain, cv=kf, scoring='f1_weighted')
 mlp_f1 = cross_val_score(mlp_model, xtrain, ytrain, cv=kf, scoring='f1_weighted')
 
 #roc_auc scores
-svc_roc_auc = cross_val_score(svc_model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr')
-rf_roc_auc = cross_val_score(rf_model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr')
-knn_roc_auc = cross_val_score(knn_model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr')
-lr_roc_auc = cross_val_score(lr_model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr')
-mlp_roc_auc = cross_val_score(mlp_model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr')
+svc_roc_auc = cross_val_score(svc_model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr_weighted')
+rf_roc_auc = cross_val_score(rf_model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr_weighted')
+knn_roc_auc = cross_val_score(knn_model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr_weighted')
+lr_roc_auc = cross_val_score(lr_model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr_weighted')
+mlp_roc_auc = cross_val_score(mlp_model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr_weighted')
 
 print("Cross-validation scores:")
 print("Accuracy:")
-print(f"\tSVC accuracy          : {svc_accuracy} \tmean: {np.mean(svc_accuracy)}")
+print(f"\tSVC accuracy          : {svc_accuracy} \tmean: {np.mean(svc_accuracy):.4f}")
 print(f"\tRandom Forest accuracy: {rf_accuracy} \tmean: {np.mean(rf_accuracy)}")
 print(f"\tKNN accuracy          : {knn_accuracy} \tmean: {np.mean(knn_accuracy)}")
 print(f"\tLogistic Regression accuracy: {lr_accuracy} \tmean: {np.mean(lr_accuracy)}")

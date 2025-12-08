@@ -9,12 +9,13 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
+from imblearn.over_sampling import SMOTE
+from imblearn.pipeline import Pipeline
 import cv2
 
 # Load saved features
-pick_in = open('femalefeaturefile.pickle', 'rb')
+pick_in = open('completemalefeaturefile.pickle', 'rb')
 data = pickle.load(pick_in)
 pick_in.close()
 print("Number of samples:", len(data))
@@ -46,20 +47,21 @@ xtrain, xtest, ytrain, ytest, ftrain, ftest = train_test_split(
 
 pipe = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA(n_components=0.95, svd_solver='full', random_state=42)),
-    ('MLP', MLPClassifier(hidden_layer_sizes=(1000), max_iter=1000, random_state=42))
+    ('pca', PCA(n_components=0.99, svd_solver='full', random_state=42)),
+    ('smote', SMOTE(random_state=42)),
+    ('MLP', MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=1000, random_state=42))
 ])
 # # # # #Scale
-scaler = StandardScaler()
-x_train_scaled = scaler.fit_transform(xtrain)
-x_test_scaled = scaler.transform(xtest)
+# scaler = StandardScaler()
+# x_train_scaled = scaler.fit_transform(xtrain)
+# x_test_scaled = scaler.transform(xtest)
 
-# # # #PCA
-pca = PCA(n_components=0.95, svd_solver='full', random_state=42)
-pca.fit(x_train_scaled)
-xtrain_pca = pca.transform(x_train_scaled)
-xtest_pca = pca.transform(x_test_scaled)
-print("PCA n_components:", pca.n_components_)
+# # # # #PCA
+# pca = PCA(n_components=0.95, svd_solver='full', random_state=42)
+# pca.fit(x_train_scaled)
+# xtrain_pca = pca.transform(x_train_scaled)
+# xtest_pca = pca.transform(x_test_scaled)
+# print("PCA n_components:", pca.n_components_)
 
 categories = ['developing','maturing','spawning', 'spent']
 
@@ -82,7 +84,7 @@ print("Accuracy:", acc)
 print("Prediction is: ", categories[pred[0]])
 
 # # # # Show an example prediction (first test sample)
-idx = 6
+idx = 1
 
 pred_label = pred[idx]
 true_label = categories[ytest[idx]]
