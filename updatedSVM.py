@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import cv2
 
 # Load saved features
-pick_in = open('mfeaturefile.pickle', 'rb')
+pick_in = open('femalefeaturefile.pickle', 'rb')
 data = pickle.load(pick_in)
 pick_in.close()
 print("Number of samples:", len(data))
@@ -47,14 +47,14 @@ xtrain, xtest, ytrain, ytest, ftrain, ftest = train_test_split(
 pipe = Pipeline([
     ('scaler', StandardScaler()),
     ('pca', PCA(n_components=0.95, svd_solver='full', random_state=42)),
-    ('MLP', MLPClassifier(hidden_layer_sizes=(100,), max_iter=1000, random_state=42))
+    ('SVC', SVC(kernel='rbf', C=10, gamma='scale', random_state=42, probability=True, class_weight='balanced'))
 ])
-# # # #Scale
+# # # # #Scale
 # scaler = StandardScaler()
 # x_train_scaled = scaler.fit_transform(xtrain)
 # x_test_scaled = scaler.transform(xtest)
 
-# # #PCA
+# # # #PCA
 # pca = PCA(n_components=0.95, svd_solver='full', random_state=42)
 # pca.fit(x_train_scaled)
 # xtrain_pca = pca.transform(x_train_scaled)
@@ -66,9 +66,9 @@ categories = ['developing','maturing','spawning', 'spent']
 # Train SVM
 pipe.fit(xtrain, ytrain)
 
-# Save model
-with open('svm_model.pickle', 'wb') as pf:
-    pickle.dump(pipe, pf)
+# # Save model
+# with open('svm_model.pickle', 'wb') as pf:
+#     pickle.dump(pipe, pf)
 
 # Evaluate
 print(f'List of test samples: {len(ytest)}')
@@ -82,7 +82,8 @@ print("Accuracy:", acc)
 print("Prediction is: ", categories[pred[0]])
 
 # # # # Show an example prediction (first test sample)
-idx = 16
+idx = 7
+
 pred_label = pred[idx]
 true_label = categories[ytest[idx]]
 pred_file = ftest[idx]
