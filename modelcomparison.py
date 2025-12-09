@@ -6,7 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import accuracy_score, classification_report, make_scorer, precision_score, recall_score, f1_score, roc_auc_score
+from sklearn.metrics import ConfusionMatrixDisplay, accuracy_score,  make_scorer, precision_score, recall_score, f1_score, roc_auc_score
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedKFold, cross_val_score, GridSearchCV, RandomizedSearchCV
@@ -105,7 +105,6 @@ svc_grid = GridSearchCV(
 svc_grid.fit(xtrain, ytrain)
 
 print("Best SVC params:", svc_grid.best_params_)
-print("Best SVC CV F1 Weighted:", svc_grid.best_score_)
 
 #Random Forest
 rf_param_grid = {
@@ -205,3 +204,16 @@ evaluate_model("Random Forest", best_rf_model, xtrain, ytrain, kf)
 evaluate_model("KNN", best_knn_model, xtrain, ytrain, kf)
 evaluate_model("Logistic Regression", best_lr_model, xtrain, ytrain, kf)
 evaluate_model("MLP", best_mlp_model, xtrain, ytrain, kf)
+
+#Confusion Matrix
+ConfusionMatrixDisplay.from_estimator(best_svc_model, xtest, ytest, display_labels=categories, cmap=plt.cm.Blues)
+plt.title("SVC Confusion Matrix")
+ConfusionMatrixDisplay.from_estimator(best_rf_model, xtest, ytest, display_labels=categories, cmap=plt.cm.Blues)
+plt.title("Random Forest Confusion Matrix")
+ConfusionMatrixDisplay.from_estimator(best_knn_model, xtest, ytest, display_labels=categories, cmap=plt.cm.Blues)
+plt.title("KNN Confusion Matrix")
+ConfusionMatrixDisplay.from_estimator(best_lr_model, xtest, ytest, display_labels=categories, cmap=plt.cm.Blues)
+plt.title("Logistic Regression Confusion Matrix")
+ConfusionMatrixDisplay.from_estimator(best_mlp_model, xtest, ytest, display_labels=categories, cmap=plt.cm.Blues)
+plt.title("MLP Confusion Matrix")
+plt.show()
