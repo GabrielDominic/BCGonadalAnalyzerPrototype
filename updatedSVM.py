@@ -15,7 +15,7 @@ from imblearn.pipeline import Pipeline
 import cv2
 
 # Load saved features
-pick_in = open('completemalefeaturefile.pickle', 'rb')
+pick_in = open('completefemalefeaturefile.pickle', 'rb')
 data = pickle.load(pick_in)
 pick_in.close()
 print("Number of samples:", len(data))
@@ -49,7 +49,9 @@ pipe = Pipeline([
     ('scaler', StandardScaler()),
     ('pca', PCA(n_components=0.99, svd_solver='full', random_state=42)),
     ('smote', SMOTE(random_state=42)),
-    ('MLP', MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=1000, random_state=42))
+    # ('MLP', MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=1000, random_state=42))
+    ('Random Forest', RandomForestClassifier(n_estimators=300, max_depth=10, random_state=42, min_samples_split=2))
+    # ('SVC', SVC (kernel='linear', C=1,  gamma='scale',random_state=42, probability=True))
 ])
 # # # # #Scale
 # scaler = StandardScaler()

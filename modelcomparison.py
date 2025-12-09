@@ -9,7 +9,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, classification_report, make_scorer, precision_score, recall_score, f1_score, roc_auc_score
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.model_selection import StratifiedKFold, cross_val_score, GridSearchCV, RandomizedSearchCV
 from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 categories = ['developing', 'maturing', 'spawning', 'spent']
 
 # Load saved features
-pick_in = open('completefemalefeaturefile.pickle', 'rb')
+pick_in = open('completemalefeaturefile.pickle', 'rb')
 data = pickle.load(pick_in)
 pick_in.close()
 print("Number of samples:", len(data))
@@ -47,52 +47,119 @@ xtrain, xtest, ytrain, ytest, ftrain, ftest = train_test_split(
 
 print("Class distribution:", dict(zip(*np.unique(ytrain, return_counts=True))))
 
-# # # #Scale
-# scaler = StandardScaler()
-# x_train_scaled = scaler.fit_transform(xtrain)
-# x_test_scaled = scaler.transform(xtest)
-
-# # #PCA
-# pca = PCA(n_components=0.95, svd_solver='full', random_state=42)
-# pca.fit(x_train_scaled)
-# xtrain_pca = pca.transform(x_train_scaled)
-# xtest_pca = pca.transform(x_test_scaled)
-# print("PCA n_components:", pca.n_components_)
-
 svc_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (n_components=0.99, svd_solver='full', random_state=42)),
+    ('pca', PCA (random_state=42)),
     ('smote', SMOTE(random_state=42)),
-    ('SVC', SVC (kernel='linear', C=1, random_state=42, probability=True))
+    ('SVC', SVC (random_state=42, probability=True))
 ])
 
 rf_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (n_components=0.99, svd_solver='full', random_state=42)),
+    ('pca', PCA (random_state=42)),
     ('smote', SMOTE(random_state=42)),
-    ('Random Forest', RandomForestClassifier(n_estimators=200, max_depth=10, random_state=42))
+    ('Random Forest', RandomForestClassifier(random_state=42))
 ])
 
 knn_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (n_components=0.99, svd_solver='full', random_state=42)),
+    ('pca', PCA (random_state=42)),
     ('smote', SMOTE(random_state=42)),
-    ('KNN', KNeighborsClassifier(n_neighbors=5))
+    ('KNN', KNeighborsClassifier())
 ])
 
 lr_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (n_components=0.99, svd_solver='full', random_state=42)),
+    ('pca', PCA (random_state=42)),
     ('smote', SMOTE(random_state=42)),
-    ('Logistic Regression', LogisticRegression(max_iter=200, random_state=42))
+    ('Logistic Regression', LogisticRegression(random_state=42))
 ])
 
 mlp_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (n_components=0.99, svd_solver='full', random_state=42)),
+    ('pca', PCA (random_state=42)),
     ('smote', SMOTE(random_state=42)),
-    ('MLP', MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=1000, random_state=42))
+    ('MLP', MLPClassifier(random_state=42))
 ])
+
+#Hyperparameter tuning
+print("Starting Hyperparameter Tuning...")
+
+#SVC
+svc_param_grid = {
+    'pca__n_components': [0.90, 0.95, 0.99],
+    'SVC__C': [0.1, 1, 10],
+    'SVC__kernel': ['linear', 'rbf'],
+    'SVC__gamma': ['scale', 'auto']
+}
+
+svc_grid = GridSearchCV(
+    estimator=svc_model,
+    param_grid=svc_param_grid,
+    cv=5,
+    scoring='f1_weighted',
+    n_jobs=-1,
+    verbose=2
+)
+
+svc_grid.fit(xtrain, ytrain)
+
+print("Best SVC params:", svc_grid.best_params_)
+print("Best SVC CV F1 Weighted:", svc_grid.best_score_)
+
+#Random Forest
+rf_param_grid = {
+    'Random Forest__n_estimators': [100, 200, 300],
+    'Random Forest__max_depth': [None, 10, 20, 30],
+    'Random Forest__min_samples_split': [2, 5, 10],
+    'pca__n_components': [0.90, 0.95, 0.99]
+}
+
+rf_grid = GridSearchCV(rf_model, rf_param_grid, cv=5, scoring='f1_weighted', n_jobs=-1)
+rf_grid.fit(xtrain, ytrain)
+
+print("Best RF params: ",rf_grid.best_params_)
+
+#KNN
+knn_param_grid = {
+    'KNN__n_neighbors': [3, 5, 7, 9, 11],
+    'KNN__weights': ['uniform', 'distance'],
+    'pca__n_components': [0.90, 0.95, 0.99]
+}
+
+knn_grid = GridSearchCV(knn_model, knn_param_grid, cv=5, scoring='f1_weighted', n_jobs=-1)
+knn_grid.fit(xtrain, ytrain)
+
+print("Best KNN params: ",knn_grid.best_params_)
+
+#Logistic Regression
+lr_param_grid = {
+    'Logistic Regression__C': [0.01, 0.1, 1, 10],
+    'Logistic Regression__max_iter': [500, 1000, 2000],
+    'Logistic Regression__penalty': ['l2'],
+    'pca__n_components': [0.90, 0.95, 0.99]
+}
+
+lr_grid = GridSearchCV(lr_model, lr_param_grid, cv=5, scoring='f1_weighted', n_jobs=-1)
+lr_grid.fit(xtrain, ytrain)
+
+print("Best LR params: ",lr_grid.best_params_)
+
+#MLP
+mlp_param_grid = {
+    'MLP__hidden_layer_sizes': [(32,), (64,), (64,32), (128,64)],
+    'MLP__max_iter': [500, 1000, 2000],
+    'MLP__early_stopping': [True],
+    'MLP__activation': ['relu', 'tanh'],
+    'MLP__alpha': [0.0001, 0.001, 0.01],
+    'MLP__learning_rate_init': [0.001, 0.01],
+    'pca__n_components': [0.90, 0.95]
+}
+
+mlp_grid = GridSearchCV(mlp_model, mlp_param_grid, cv=5, scoring='f1_weighted', n_jobs=-1)
+mlp_grid.fit(xtrain, ytrain)
+
+print("Best MLP params: ",mlp_grid.best_params_)
 
 # # Train SVM
 # svc_model.fit(xtrain, ytrain)
@@ -105,74 +172,36 @@ mlp_model = Pipeline([
 # with open('svm_model.pickle', 'wb') as pf:
 #     pickle.dump(pipe, pf)
 
+#Overwrite models with best estimators from grid search
+best_svc_model = svc_grid.best_estimator_
+best_rf_model = rf_grid.best_estimator_
+best_knn_model = knn_grid.best_estimator_
+best_lr_model = lr_grid.best_estimator_
+best_mlp_model = mlp_grid.best_estimator_
+
+##EVALUATION
 kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 precision_weighted = make_scorer(precision_score, average='weighted', zero_division=0)
-recall_macro = make_scorer(recall_score, average='macro', zero_division=0)
-f1_weighted = make_scorer(f1_score, average='weighted', zero_division=0)
+# recall_macro = make_scorer(recall_score, average='macro', zero_division=0)
+# f1_weighted = make_scorer(f1_score, average='weighted', zero_division=0)
 
-#Accuracy Scores
-svc_accuracy = cross_val_score(svc_model, xtrain, ytrain, cv=kf, scoring='accuracy')
-rf_accuracy = cross_val_score(rf_model, xtrain, ytrain, cv=kf, scoring='accuracy')
-knn_accuracy = cross_val_score(knn_model, xtrain, ytrain, cv=kf, scoring='accuracy')
-lr_accuracy = cross_val_score(lr_model, xtrain, ytrain, cv=kf, scoring='accuracy')
-mlp_accuracy = cross_val_score(mlp_model, xtrain, ytrain, cv=kf, scoring='accuracy')
+def evaluate_model(name, model, xtrain, ytrain, kf):
+    print(f"Evaluating {name}...")
+    acc = cross_val_score(model, xtrain, ytrain, cv=kf, scoring='accuracy')
+    precision = cross_val_score(model, xtrain, ytrain, cv=kf, scoring=precision_weighted)
+    recall_macro = cross_val_score(model, xtrain, ytrain, cv=kf, scoring='recall_macro')
+    f1 = cross_val_score(model, xtrain, ytrain, cv=kf, scoring='f1_weighted')
+    roc_auc = cross_val_score(model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr_weighted')
 
-#Precision scores
-svc_precision = cross_val_score(svc_model, xtrain, ytrain, cv=kf, scoring=precision_weighted)
-rf_precision = cross_val_score(rf_model, xtrain, ytrain, cv=kf, scoring=precision_weighted)
-knn_precision = cross_val_score(knn_model, xtrain, ytrain, cv=kf, scoring=precision_weighted)
-lr_precision = cross_val_score(lr_model, xtrain, ytrain, cv=kf, scoring=precision_weighted)
-mlp_precision = cross_val_score(mlp_model, xtrain, ytrain, cv=kf, scoring=precision_weighted)
+    print(f"{name} Cross-validation scores:")
+    print(f"\tAccuracy          : {acc} \tmean: {np.mean(acc):.2f} standard deviation: {np.std(acc):.2f}")
+    print(f"\tPrecision         : {precision} \tmean: {np.mean(precision):.2f} standard deviation: {np.std(precision):.2f}")
+    print(f"\tRecall            : {recall_macro} \tmean: {np.mean(recall_macro):.2f} standard deviation: {np.std(recall_macro):.2f}")
+    print(f"\tF1                : {f1} \tmean: {np.mean(f1):.2f} standard deviation: {np.std(f1):.2f}")
+    print(f"\tROC_AUC           : {roc_auc} \tmean: {np.mean(roc_auc):.2f} standard deviation: {np.std(roc_auc):.2f}")
 
-#Recall Scores
-svc_recall = cross_val_score(svc_model, xtrain, ytrain, cv=kf, scoring='recall_macro')
-rf_recall = cross_val_score(rf_model, xtrain, ytrain, cv=kf, scoring='recall_macro')
-knn_recall = cross_val_score(knn_model, xtrain, ytrain, cv=kf, scoring='recall_macro')
-lr_recall = cross_val_score(lr_model, xtrain, ytrain, cv=kf, scoring='recall_macro')
-mlp_recall = cross_val_score(mlp_model, xtrain, ytrain, cv=kf, scoring='recall_macro')
-
-#F1 Scores
-svc_f1 = cross_val_score(svc_model, xtrain, ytrain, cv=kf, scoring='f1_weighted')
-rf_f1 = cross_val_score(rf_model, xtrain, ytrain, cv=kf, scoring='f1_weighted')
-knn_f1 = cross_val_score(knn_model, xtrain, ytrain, cv=kf, scoring='f1_weighted')
-lr_f1 = cross_val_score(lr_model, xtrain, ytrain, cv=kf, scoring='f1_weighted')
-mlp_f1 = cross_val_score(mlp_model, xtrain, ytrain, cv=kf, scoring='f1_weighted')
-
-#roc_auc scores
-svc_roc_auc = cross_val_score(svc_model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr_weighted')
-rf_roc_auc = cross_val_score(rf_model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr_weighted')
-knn_roc_auc = cross_val_score(knn_model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr_weighted')
-lr_roc_auc = cross_val_score(lr_model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr_weighted')
-mlp_roc_auc = cross_val_score(mlp_model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr_weighted')
-
-print("Cross-validation scores:")
-print("Accuracy:")
-print(f"\tSVC accuracy          : {svc_accuracy} \tmean: {np.mean(svc_accuracy):.4f}")
-print(f"\tRandom Forest accuracy: {rf_accuracy} \tmean: {np.mean(rf_accuracy)}")
-print(f"\tKNN accuracy          : {knn_accuracy} \tmean: {np.mean(knn_accuracy)}")
-print(f"\tLogistic Regression accuracy: {lr_accuracy} \tmean: {np.mean(lr_accuracy)}")
-print(f"\tMLP accuracy          : {mlp_accuracy} \tmean: {np.mean(mlp_accuracy)}")
-print("Precision:")
-print(f"\tSVC                   : {svc_precision} \tmean: {np.mean(svc_precision)}")
-print(f"\tRandom Forest         : {rf_precision} \tmean: {np.mean(rf_precision)}")
-print(f"\tKNN                   : {knn_precision} \tmean: {np.mean(knn_precision)}")
-print(f"\tLogistic Regression   : {lr_precision} \tmean: {np.mean(lr_precision)}")
-print(f"\tMLP                   : {mlp_precision} \tmean: {np.mean(mlp_precision)}")
-print("Recall:")
-print(f"\tSVC                   : {svc_recall} \tmean: {np.mean(svc_recall)}")
-print(f"\tRandom Forest         : {rf_recall} \tmean: {np.mean(rf_recall)}")
-print(f"\tKNN                   : {knn_recall} \tmean: {np.mean(knn_recall)}")
-print(f"\tLogistic Regression   : {lr_recall} \tmean: {np.mean(lr_recall)}")
-print(f"\tMLP                   : {mlp_recall} \tmean: {np.mean(mlp_recall)}")
-print("F1:")
-print(f"\tSVC                   : {svc_f1} \tmean: {np.mean(svc_f1)}")
-print(f"\tRandom Forest         : {rf_f1} \tmean: {np.mean(rf_f1)}")
-print(f"\tKNN                   : {knn_f1} \tmean: {np.mean(knn_f1)}")
-print(f"\tLogistic Regression   : {lr_f1} \tmean: {np.mean(lr_f1)}")
-print(f"\tMLP                   : {mlp_f1} \tmean: {np.mean(mlp_f1)}")
-print("ROC_AUC:")
-print(f"\tSVC                   : {svc_roc_auc} \tmean: {np.mean(svc_roc_auc)}")
-print(f"\tRandom Forest         : {rf_roc_auc} \tmean: {np.mean(rf_roc_auc)}")
-print(f"\tKNN                   : {knn_roc_auc} \tmean: {np.mean(knn_roc_auc)}")
-print(f"\tLogistic Regression   : {lr_roc_auc} \tmean: {np.mean(lr_roc_auc)}")
-print(f"\tMLP                   : {mlp_roc_auc} \tmean: {np.mean(mlp_roc_auc)}")
+evaluate_model("SVC", best_svc_model, xtrain, ytrain, kf)
+evaluate_model("Random Forest", best_rf_model, xtrain, ytrain, kf)
+evaluate_model("KNN", best_knn_model, xtrain, ytrain, kf)
+evaluate_model("Logistic Regression", best_lr_model, xtrain, ytrain, kf)
+evaluate_model("MLP", best_mlp_model, xtrain, ytrain, kf)
