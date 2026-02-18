@@ -50,7 +50,7 @@ pipe = Pipeline([
     ('scaler', StandardScaler()),
     ('pca', PCA(n_components=0.95, svd_solver='full', random_state=42)),
     ('smote', SMOTE(random_state=42)),
-    # ('MLP', MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=1000, random_state=42))
+    # # ('MLP', MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=1000, random_state=42))
     ('Random Forest', RandomForestClassifier(n_estimators=300, max_depth=10, random_state=42, min_samples_split=2))
     # ('SVC', SVC (kernel='linear', C=1,  gamma='scale', random_state=42, probability=True))
 ])
@@ -115,70 +115,70 @@ else:
 # print('Score equals mean(y_pred == y_test)?', consistency)
 # print()
 
-#Calculating Feature Importance
-print(f'Calculating Feature Importance')
+# #Calculating Feature Importance
+# print(f'Calculating Feature Importance')
 
-num_features = xtrain.shape[1]
+# num_features = xtrain.shape[1]
 
-# 1. GLCM Features
-# You iterate through ['contrast', 'homogeneity', 'energy', 'correlation']
-# and calculate mean and std for each.
-glcm_props = ['contrast', 'homogeneity', 'energy', 'correlation']
-glcm_names = []
-for prop in glcm_props:
-    glcm_names.extend([f'glcm_{prop}_mean', f'glcm_{prop}_std'])
+# # GLCM Features
+# # ['contrast', 'homogeneity', 'energy', 'correlation']
+# # and calculate mean and std for each.
+# glcm_props = ['contrast', 'homogeneity', 'energy', 'correlation']
+# glcm_names = []
+# for prop in glcm_props:
+#     glcm_names.extend([f'glcm_{prop}_mean', f'glcm_{prop}_std'])
 
-# 2. LBP Features
-# P=24, method='uniform' results in P + 2 bins (patterns 0 to P+1)
-P = 24
-lbp_names = [f'lbp_bin_{i}' for i in range(P + 2)]
+# # 2. LBP Features
+# # P=24, method='uniform' results in P + 2 bins (patterns 0 to P+1)
+# P = 24
+# lbp_names = [f'lbp_bin_{i}' for i in range(P + 2)]
 
-# 3. Color Moments
-# cv2.imread loads in BGR format by default.
-# Your loop passes the raw 'img' (BGR) to this function.
-channels = ['B', 'G', 'R']
-moments = ['mean', 'std', 'skew']
-color_names = []
-for channel in channels:
-    for moment in moments:
-        color_names.append(f'color_{channel}_{moment}')
+# # 3. Color Moments
+# # cv2.imread loads in BGR format by default.
+# # Your loop passes the raw 'img' (BGR) to this function.
+# channels = ['B', 'G', 'R']
+# moments = ['mean', 'std', 'skew']
+# color_names = []
+# for channel in channels:
+#     for moment in moments:
+#         color_names.append(f'color_{channel}_{moment}')
 
-# 4. Morphological Features
-# The function returns exactly these three in order
-morph_names = ['morph_area_foreground', 'morph_area_contour', 'morph_circularity']
+# # 4. Morphological Features
+# # The function returns exactly these three in order
+# morph_names = ['morph_area_foreground', 'morph_area_contour', 'morph_circularity']
 
-# 5. Edge Features
-# The function returns exactly these three in order
-edge_names = ['edge_sobel_mean', 'edge_sobel_std', 'edge_canny_density']
+# # 5. Edge Features
+# # The function returns exactly these three in order
+# edge_names = ['edge_sobel_mean', 'edge_sobel_std', 'edge_canny_density']
 
-# --- Combine All Feature Names ---
-# This order matches your: np.hstack([glcm_feat, lbp_feat, cm_feat, morph_feat, edge])
-feature_names = glcm_names + lbp_names + color_names + morph_names + edge_names
+# # --- Combine All Feature Names ---
+# # This order matches your: np.hstack([glcm_feat, lbp_feat, cm_feat, morph_feat, edge])
+# feature_names = glcm_names + lbp_names + color_names + morph_names + edge_names
 
-# Verification
-print(f"Total Feature Names: {len(feature_names)}")
-print("Feature Names List:", feature_names)
-print(f'Number of features: {num_features}')
+# # Verification
+# print(f"Total Feature Names: {len(feature_names)}")
+# print("Feature Names List:", feature_names)
+# print(f'Number of features: {num_features}')
 
-target_model = pipe
-result = permutation_importance(
-    target_model,
-    xtest,
-    ytest,
-    n_repeats=10,
-    random_state=42,
-    n_jobs=1
-)
+# target_model = pipe
+# result = permutation_importance(
+#     target_model,
+#     xtest,
+#     ytest,
+#     n_repeats=10,
+#     random_state=42,
+#     n_jobs=1
+# )
 
-sorted_idx = result.importances_mean.argsort()
+# sorted_idx = result.importances_mean.argsort()
 
-plt.figure(figsize=(10,6))
-plt.boxplot(
-    result.importances[sorted_idx].T,
-    vert=False,
-    tick_labels=[feature_names[i] for i in sorted_idx]
-)
-plt.title("Permutation Importances (Test Set")
-plt.xlabel("Decrease in Accuracy Score")
-plt.tight_layout()
-plt.show()
+# plt.figure(figsize=(10,6))
+# plt.boxplot(
+#     result.importances[sorted_idx].T,
+#     vert=False,
+#     tick_labels=[feature_names[i] for i in sorted_idx]
+# )
+# plt.title("Permutation Importances (Test Set")
+# plt.xlabel("Decrease in Accuracy Score")
+# plt.tight_layout()
+# plt.show()

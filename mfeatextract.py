@@ -6,6 +6,7 @@ from skimage.feature.texture import graycomatrix, graycoprops
 from skimage.feature import local_binary_pattern
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
 import pickle
 
 def preprocess_image_segmented(img):
@@ -69,6 +70,7 @@ def extract_edge_features(img_gray):
     # Edge density via Canny
     edges = cv2.Canny(img_gray, 50, 150)
     edge_density = edges.mean()  # proportion of edge pixels
+    cv2.imshow('edges', edges)
 
     # Simple statistics
     sobel_mean = sobel_mag.mean()
@@ -140,8 +142,8 @@ def extract_morph_features(img_gray):
     return np.array([area_foreground, area_contour, circularity], dtype=np.float32)
 
 ## #Data Preparation
-dir = 'C:\\GitProjects\\BCGonadalAnalyzerPrototype\\imagedataset\\M'
-categories = ['developing','maturing','spawning', 'spent']
+# dir = 'C:\\GitProjects\\BCGonadalAnalyzerPrototype\\imagedataset\\M'
+# categories = ['developing','maturing','spawning', 'spent']
 
 data = []
 feature_vectors = []
@@ -149,50 +151,93 @@ labels = []
 images_original = []      
 filenames = []
 
-for category in categories:
-    images_segmented = []    
-    path = os.path.join(dir, category)
-    label = categories.index(category)
+# for category in categories:
+images_segmented = []    
+#     path = os.path.join(dir, category)
+#     label = categories.index(category)
 
-    for img in os.listdir(path):
-        img_path = os.path.join(path, img)
-        try:    
-            img = cv2.imread(img_path, cv2.IMREAD_COLOR)
-            if img is None:
-                print(f'Image not found or unreadable: {img_path}')
+#     for img in os.listdir(path):
+#         img_path = os.path.join(path, img)
+#         try:    
+#             img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+#             if img is None:
+#                 print(f'Image not found or unreadable: {img_path}')
         
-            #Preprocessing
-            clean_img = preprocess_image_clean(img)
-            images_original.append(clean_img)
-            seg_img = preprocess_image_segmented(img)
-            images_segmented.append((seg_img, img_path))
+#             #Preprocessing
+#             clean_img = preprocess_image_clean(img)
+#             images_original.append(clean_img)
+#             seg_img = preprocess_image_segmented(img)
+#             images_segmented.append((seg_img, img_path))
 
-            #Feature Extraction
-            gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+#             #Feature Extraction
+#             gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
-            glcm_feat = extract_glcm(gray)
-            print(f'GLCM features for {img_path}')
-            lbp_feat = extract_lbp(gray)
-            print(f'LBP features for {img_path}')
-            cm_feat = extract_color_moments(img)
-            print(f'Color moments for {img_path}')
-            morph_feat = extract_morph_features(gray)
-            print(f'Morphological features for {img_path}')
-            edge = extract_edge_features(gray)
-            print(f'Edge features for {img_path}')
+#             glcm_feat = extract_glcm(gray)
+#             print(f'GLCM features for {img_path}')
+#             lbp_feat = extract_lbp(gray)
+#             print(f'LBP features for {img_path}')
+#             cm_feat = extract_color_moments(img)
+#             print(f'Color moments for {img_path}')
+#             morph_feat = extract_morph_features(gray)
+#             print(f'Morphological features for {img_path}')
+#             edge = extract_edge_features(gray)
+#             print(f'Edge features for {img_path}')
 
-            full_feature = np.hstack([glcm_feat, lbp_feat, cm_feat, morph_feat, edge])
-            labels.append(label)
-            filenames.append(img_path)
-            data.append([full_feature, label, img_path])
-        except Exception as e:
-            print(f'Failed to process {img_path}: {e}')
+#             full_feature = np.hstack([glcm_feat, lbp_feat, cm_feat, morph_feat, edge])
+#             labels.append(label)
+#             filenames.append(img_path)
+#             data.append([full_feature, label, img_path])
+#         except Exception as e:
+#             print(f'Failed to process {img_path}: {e}')
 
-print(f'Features Extracted: {len(data)}')
-print("Loaded:", len(images_original), "images")
+# print(f'Features Extracted: {len(data)}')
+# print("Loaded:", len(images_original), "images")
 
 # Saving Data
-pick_in = open('completemalefeaturefile.pickle', 'wb')
-pickle.dump(data, pick_in)
-pick_in.close()
+# pick_in = open('completemalefeaturefile.pickle', 'wb')
+# pickle.dump(data, pick_in)
+# pick_in.close()
 
+#Preprocess a single image for testing
+test_img_path = 'C:\\GitProjects\\BCGonadalAnalyzerPrototype\\imagedataset\\F\\developing\\18 F-Developing.jpg'
+img = cv2.imread(test_img_path, cv2.IMREAD_COLOR)
+if img is None:
+    print(f'Image not found or unreadable: {test_img_path}')
+
+#Preprocessing
+clean_img = preprocess_image_clean(img)
+images_original.append(clean_img)
+seg_img = preprocess_image_segmented(img)
+images_segmented.append((seg_img, test_img_path))
+
+#Feature Extraction
+gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+
+glcm_feat = extract_glcm(gray)
+print(f'GLCM features for {test_img_path}')
+lbp_feat = extract_lbp(gray)
+print(f'LBP features for {test_img_path}')
+cm_feat = extract_color_moments(img)
+print(f'Color moments for {test_img_path}')
+morph_feat = extract_morph_features(gray)
+print(f'Morphological features for {test_img_path}')
+edge = extract_edge_features(gray)
+print(f'Edge features for {test_img_path}')
+
+full_feature = np.hstack([glcm_feat, lbp_feat, cm_feat, morph_feat, edge])
+feat_img = full_feature.reshape(-1, 1)  # make it tall
+feat_img = (feat_img - feat_img.min()) / (feat_img.max() - feat_img.min())  # normalize 0–1
+feat_img = (feat_img * 255).astype(np.uint8)
+cv2.imshow('segmented', seg_img)
+cv2.imshow('original', clean_img)
+cv2.imshow('feature_vector', feat_img)
+
+plt.figure(figsize=(12,4))
+plt.plot(full_feature)
+plt.title("Feature Vector")
+plt.xlabel("Feature Index")
+plt.ylabel("Value")
+plt.show()
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()
