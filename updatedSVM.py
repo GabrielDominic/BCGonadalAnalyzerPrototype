@@ -87,7 +87,7 @@ print("Accuracy:", acc)
 print("Prediction is: ", categories[pred[0]])
 
 # # # # Show an example prediction (first test sample)
-idx = 3
+idx = 19
 
 pred_label = pred[idx]
 true_label = categories[ytest[idx]]

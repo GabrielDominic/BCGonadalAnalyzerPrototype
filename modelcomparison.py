@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 categories = ['developing', 'maturing', 'spawning', 'spent']
 
 # Load saved features
-pick_in = open('completefemalefeaturefile.pickle', 'rb')
+pick_in = open('completemalefeaturefile.pickle', 'rb')
 data = pickle.load(pick_in)
 pick_in.close()
 print("Number of samples:", len(data))
