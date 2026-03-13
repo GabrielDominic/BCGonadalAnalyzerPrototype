@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import ConfusionMatrixDisplay, accuracy_score,  make_scorer, precision_score, recall_score, f1_score, roc_auc_score
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -13,11 +14,16 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score, GridSearch
 from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
+import xgboost as xgb
 
 categories = ['developing', 'maturing', 'spawning', 'spent']
 
 # Load saved features
+<<<<<<< Updated upstream
 pick_in = open('CTGAFmalefeaturefile.pickle', 'rb')
+=======
+pick_in = open('CTcompletemalefeaturefile.pickle', 'rb')
+>>>>>>> Stashed changes
 data = pickle.load(pick_in)
 pick_in.close()
 print("Number of samples:", len(data))
@@ -80,6 +86,20 @@ mlp_model = Pipeline([
     ('pca', PCA (random_state=42)),
     ('smote', SMOTE(random_state=42)),
     ('MLP', MLPClassifier(random_state=42))
+])
+
+gb_model = Pipeline([
+    ('scaler', StandardScaler()),
+    ('pca', PCA (random_state=42)),
+    ('smote', SMOTE(random_state=42)),
+    ('Gradient Boosting', GradientBoostingClassifier(random_state=42))
+])
+
+xgboost_model = Pipeline([
+    ('scaler', StandardScaler()),
+    ('pca', PCA (random_state=42)),
+    ('smote', SMOTE(random_state=42)),
+    ('XGBoost', xgb.XGBClassifier(random_state=42, eval_metric='mlogloss'))
 ])
 
 #Hyperparameter tuning
@@ -160,6 +180,27 @@ mlp_grid.fit(xtrain, ytrain)
 
 print("Best MLP params: ",mlp_grid.best_params_)
 
+#Gradient Boosting
+gb_param_grid = {
+    'Gradient Boosting__n_estimators': [100, 200, 300],
+    'Gradient Boosting__learning_rate': [0.01, 0.1, 0.2],
+    'Gradient Boosting__max_depth': [3, 5, 7],
+    'pca__n_components': [0.90, 0.95, 0.99]
+}
+
+gb_grid = GridSearchCV(gb_model, gb_param_grid, cv=5, scoring='f1_weighted', n_jobs=-1)
+gb_grid.fit(xtrain, ytrain)
+
+#XGBoost
+xgb_param_grid = {
+    'XGBoost__n_estimators': [100, 200, 300],
+    'XGBoost__learning_rate': [0.01, 0.1, 0.2],
+    'XGBoost__max_depth': [3, 5, 7],
+    'pca__n_components': [0.90, 0.95, 0.99]
+}
+xgb_grid = GridSearchCV(xgboost_model, xgb_param_grid, cv=5, scoring='f1_weighted', n_jobs=-1)
+xgb_grid.fit(xtrain, ytrain)
+
 # # Train SVM
 # svc_model.fit(xtrain, ytrain)
 # rf_model.fit(xtrain, ytrain)
@@ -177,6 +218,8 @@ best_rf_model = rf_grid.best_estimator_
 best_knn_model = knn_grid.best_estimator_
 best_lr_model = lr_grid.best_estimator_
 best_mlp_model = mlp_grid.best_estimator_
+best_gb_model = gb_grid.best_estimator_
+best_xgb_model = xgb_grid.best_estimator_
 
 ##EVALUATION
 kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -204,6 +247,8 @@ evaluate_model("Random Forest", best_rf_model, xtrain, ytrain, kf)
 evaluate_model("KNN", best_knn_model, xtrain, ytrain, kf)
 evaluate_model("Logistic Regression", best_lr_model, xtrain, ytrain, kf)
 evaluate_model("MLP", best_mlp_model, xtrain, ytrain, kf)
+evaluate_model("Gradient Boosting", gb_model, xtrain, ytrain, kf)
+evaluate_model("XGBoost",best_xgb_model, xtrain, ytrain, kf)
 
 #Confusion Matrix
 ConfusionMatrixDisplay.from_estimator(best_svc_model, xtest, ytest, display_labels=categories, cmap=plt.cm.Blues)
@@ -216,4 +261,8 @@ ConfusionMatrixDisplay.from_estimator(best_lr_model, xtest, ytest, display_label
 plt.title("Logistic Regression Confusion Matrix")
 ConfusionMatrixDisplay.from_estimator(best_mlp_model, xtest, ytest, display_labels=categories, cmap=plt.cm.Blues)
 plt.title("MLP Confusion Matrix")
+ConfusionMatrixDisplay.from_estimator(best_gb_model, xtest, ytest, display_labels=categories, cmap=plt.cm.Blues)
+plt.title("Gradient Boosting Confusion Matrix")
+ConfusionMatrixDisplay.from_estimator(best_xgb_model, xtest, ytest, display_labels=categories, cmap=plt.cm.Blues)
+plt.title("XGBoost Confusion Matrix")
 plt.show()
