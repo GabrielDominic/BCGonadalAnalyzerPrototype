@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import pickle
 
 def preprocess_image_segmented(img):
-    img = cv2.resize(img, (512, 512))
+    # img = cv2.resize(img, (512, 512))
 
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     L, A, B = cv2.split(lab)
@@ -42,8 +42,8 @@ def preprocess_image_segmented(img):
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=3)
 
-    if np.sum(mask) < 5000:
-        return cv2.cvtColor(cv2.resize(img, (256, 256)), cv2.COLOR_BGR2RGB)
+    # if np.sum(mask) < 5000:
+    #     return cv2.cvtColor(cv2.resize(img, (256, 256)), cv2.COLOR_BGR2RGB)
 
     coords = cv2.findNonZero(mask)
     x, y, w, h = cv2.boundingRect(coords)
@@ -180,7 +180,7 @@ def extract_gamete_area(img_gray, image, folder_name):
     return np.array([total_tissue_pixels, gamete_pixels, area_fraction], dtype=np.float32)
 
 ## #Data Preparation
-dir = 'C:\\GitProjects\\BCGonadalAnalyzerPrototype\\imagedataset\\M'
+dir = 'C:\\GitProjects\\BCGonadalAnalyzerPrototype\\output_images\\M'
 categories = ['developing','maturing','spawning','spent']
 
 folder_name = os.path.basename(dir)
@@ -204,12 +204,12 @@ for category in categories:
                 print(f'Image not found or unreadable: {img_path}')
         
             #Preprocessing
-            clean_img = preprocess_image_clean(img)
-            images_original.append(clean_img)
-            seg_img = preprocess_image_segmented(img)
-            images_segmented.append((seg_img, img_path))
+            # clean_img = preprocess_image_clean(img)
+            # images_original.append(clean_img)
+            # seg_img = preprocess_image_segmented(img)
+            # images_segmented.append((seg_img, img_path))
 
-            #Feature Extraction
+            # #Feature Extraction
             gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
             glcm_feat = extract_glcm(gray)
@@ -236,7 +236,7 @@ print(f'Features Extracted: {len(data)}')
 print("Loaded:", len(images_original), "images")
 
 # Saving Data
-pick_in = open('completemalefeaturefile.pickle', 'wb')
+pick_in = open('CTGAFmalefeaturefile.pickle', 'wb')
 pickle.dump(data, pick_in)
 pick_in.close()
 
