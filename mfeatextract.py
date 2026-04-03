@@ -8,6 +8,7 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import pickle
+import time
 
 def preprocess_image_segmented(img):
     # img = cv2.resize(img, (512, 512))
@@ -70,7 +71,7 @@ def extract_edge_features(img_gray):
     # Edge density via Canny
     edges = cv2.Canny(img_gray, 50, 150)
     edge_density = edges.mean()  # proportion of edge pixels
-    cv2.imshow('edges', edges)
+    # cv2.imshow('edges', edges)
 
     # Simple statistics
     sobel_mean = sobel_mag.mean()
@@ -145,7 +146,7 @@ def extract_gamete_area(img_gray, image, folder_name):
     ##TISSUE MASK##
     #Otsu's Thresholding to create a binary mask of the tissue
     ret, tissue_mask = cv2.threshold(img_gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    cv2.imshow('Tissue Mask', tissue_mask)
+    # cv2.imshow('Tissue Mask', tissue_mask)
 
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     tissue_mask = cv2.morphologyEx(tissue_mask, cv2.MORPH_OPEN, kernel, iterations=2)
@@ -185,6 +186,14 @@ categories = ['developing','maturing','spawning','spent']
 
 folder_name = os.path.basename(dir)
 
+#Time the feature extraction process
+glcm_times = []
+lbp_times = []
+cm_times = []
+morph_times = []
+edge_times = []
+gamete_times = []
+
 data = []
 feature_vectors = []
 labels = []
@@ -212,18 +221,43 @@ for category in categories:
             # #Feature Extraction
             gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
+            total_start = time.time()
+
+            start = time.time()
             glcm_feat = extract_glcm(gray)
-            print(f'GLCM features for {img_path}')
+            end = time.time()
+            glcm_times.append(end - start)
+            print(f'GLCM features for {img_path} took {end - start:.2f} seconds')
+            
+            start = time.time()
             lbp_feat = extract_lbp(gray)
-            print(f'LBP features for {img_path}')
+            end = time.time()
+            lbp_times.append(end - start)
+            print(f'LBP features for {img_path} took {end - start:.2f} seconds')
+
+            start = time.time()
             cm_feat = extract_color_moments(img)
-            print(f'Color moments for {img_path}')
+            end = time.time()
+            cm_times.append(end - start)
+            print(f'Color moments for {img_path} took {end - start:.2f} seconds')
+            
+            start = time.time()
             morph_feat = extract_morph_features(gray)
-            print(f'Morphological features for {img_path}')
+            end = time.time()
+            morph_times.append(end - start)
+            print(f'Morphological features for {img_path} took {end - start:.2f} seconds')
+            
+            start = time.time()
             edge = extract_edge_features(gray)
-            print(f'Edge features for {img_path}')
+            end = time.time()
+            edge_times.append(end - start)
+            print(f'Edge features for {img_path} took {end - start:.2f} seconds')
+            
+            start = time.time()
             gamete_area = extract_gamete_area(gray, img, folder_name)
-            print(f'Gamete area features for {img_path}')
+            end = time.time()
+            gamete_times.append(end - start)
+            print(f'Gamete area features for {img_path} took {end - start:.2f} seconds')
 
             full_feature = np.hstack([glcm_feat, lbp_feat, cm_feat, morph_feat, edge, gamete_area])
             labels.append(label)
@@ -234,6 +268,13 @@ for category in categories:
 
 print(f'Features Extracted: {len(data)}')
 print("Loaded:", len(images_original), "images")
+
+print(f'Average GLCM extraction time: {np.mean(glcm_times):.2f} seconds')
+print(f'Average LBP extraction time: {np.mean(lbp_times):.2f} seconds')
+print(f'Average Color Moments extraction time: {np.mean(cm_times):.2f} seconds')
+print(f'Average Morphological extraction time: {np.mean(morph_times):.2f} seconds')
+print(f'Average Edge extraction time: {np.mean(edge_times):.2f} seconds')
+print(f'Average Gamete Area extraction time: {np.mean(gamete_times):.2f} seconds')
 
 # Saving Data
 pick_in = open('CTGAFmalefeaturefile.pickle', 'wb')
@@ -267,7 +308,7 @@ pick_in.close()
 # print(f'Edge features for {test_img_path}')
 # gamete_area = extract_gamete_area(gray, img)
 # print(f'Gamete area features for {test_img_path}')
-
+    
 # full_feature = np.hstack([glcm_feat, lbp_feat, cm_feat, morph_feat, edge, gamete_area])
 # feat_img = full_feature.reshape(-1, 1)  # make it tall
 # feat_img = (feat_img - feat_img.min()) / (feat_img.max() - feat_img.min())  # normalize 0–1

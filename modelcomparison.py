@@ -19,11 +19,7 @@ import xgboost as xgb
 categories = ['developing', 'maturing', 'spawning', 'spent']
 
 # Load saved features
-<<<<<<< Updated upstream
 pick_in = open('CTGAFmalefeaturefile.pickle', 'rb')
-=======
-pick_in = open('CTcompletemalefeaturefile.pickle', 'rb')
->>>>>>> Stashed changes
 data = pickle.load(pick_in)
 pick_in.close()
 print("Number of samples:", len(data))
