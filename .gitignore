@@ -2,3 +2,7 @@ imagedataset/
 *.png
 *.jpg
 *.jpeg
+.venv/
+Scripts/
+.vscode/
+__pycache__/
