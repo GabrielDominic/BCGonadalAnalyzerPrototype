@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import cv2
 
 # Load saved features
-pick_in = open('CTcompletemalefeaturefile.pickle', 'rb')
+pick_in = open('CTGAFmalefeaturefile.pickle', 'rb')
 data = pickle.load(pick_in)
 pick_in.close()
 print("Number of samples:", len(data))

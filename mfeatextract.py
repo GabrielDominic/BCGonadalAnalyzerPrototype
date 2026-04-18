@@ -181,7 +181,9 @@ def extract_gamete_area(img_gray, image, folder_name):
     return np.array([total_tissue_pixels, gamete_pixels, area_fraction], dtype=np.float32)
 
 ## #Data Preparation
-dir = 'C:\\GitProjects\\BCGonadalAnalyzerPrototype\\output_images\\M'
+# dir = 'C:\\GitProjects\\BCGonadalAnalyzerPrototype\\output_images\\M'
+# dir = 'D:\\SP\\BCDataset15-4-2026\\M'
+dir = 'C:\\GitProjects\\BCGonadalAnalyzerPrototype\\normalized_updated_dataset\\M'
 categories = ['developing','maturing','spawning','spent']
 
 folder_name = os.path.basename(dir)
@@ -260,6 +262,7 @@ for category in categories:
             print(f'Gamete area features for {img_path} took {end - start:.2f} seconds')
 
             full_feature = np.hstack([glcm_feat, lbp_feat, cm_feat, morph_feat, edge, gamete_area])
+            # full_feature = np.hstack([lbp_feat, cm_feat, morph_feat, edge])
             labels.append(label)
             filenames.append(img_path)
             data.append([full_feature, label, img_path])
@@ -277,52 +280,9 @@ print(f'Average Edge extraction time: {np.mean(edge_times):.2f} seconds')
 print(f'Average Gamete Area extraction time: {np.mean(gamete_times):.2f} seconds')
 
 # Saving Data
-pick_in = open('CTGAFmalefeaturefile.pickle', 'wb')
+pick_in = open('CTGAFmaleupdatedFeatures.pickle', 'wb')
 pickle.dump(data, pick_in)
 pick_in.close()
 
-# #Preprocess a single image for testing
-# test_img_path = 'C:\\GitProjects\\BCGonadalAnalyzerPrototype\\imagedataset\\F\\developing\\18 F-Developing.jpg'
-# img = cv2.imread(test_img_path, cv2.IMREAD_COLOR)
-# if img is None:
-#     print(f'Image not found or unreadable: {test_img_path}')
-
-# #Preprocessing
-# clean_img = preprocess_image_clean(img)
-# images_original.append(clean_img)
-# seg_img = preprocess_image_segmented(img)
-# images_segmented.append((seg_img, test_img_path))
-
-# #Feature Extraction
-# gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-
-# glcm_feat = extract_glcm(gray)
-# print(f'GLCM features for {test_img_path}')
-# lbp_feat = extract_lbp(gray)
-# print(f'LBP features for {test_img_path}')
-# cm_feat = extract_color_moments(img)
-# print(f'Color moments for {test_img_path}')
-# morph_feat = extract_morph_features(gray)
-# print(f'Morphological features for {test_img_path}')
-# edge = extract_edge_features(gray)
-# print(f'Edge features for {test_img_path}')
-# gamete_area = extract_gamete_area(gray, img)
-# print(f'Gamete area features for {test_img_path}')
-    
-# full_feature = np.hstack([glcm_feat, lbp_feat, cm_feat, morph_feat, edge, gamete_area])
-# feat_img = full_feature.reshape(-1, 1)  # make it tall
-# feat_img = (feat_img - feat_img.min()) / (feat_img.max() - feat_img.min())  # normalize 0–1
-# feat_img = (feat_img * 255).astype(np.uint8)
-# cv2.imshow('segmented', seg_img)
-# cv2.imshow('original', clean_img)
-# cv2.imshow('feature_vector', feat_img)
-
-# plt.figure(figsize=(12,4))
-# plt.plot(full_feature)
-# plt.title("Feature Vector")
-# plt.xlabel("Feature Index")
-# plt.ylabel("Value")
-# plt.show()
-
-# cv2.waitKey(0)
+cv2.waitKey(0)
 cv2.destroyAllWindows()

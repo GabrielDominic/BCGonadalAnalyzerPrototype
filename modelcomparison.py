@@ -7,6 +7,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import GradientBoostingClassifier
+import xgboost as xgb
 from sklearn.metrics import ConfusionMatrixDisplay, accuracy_score,  make_scorer, precision_score, recall_score, f1_score, roc_auc_score
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -14,12 +15,12 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score, GridSearch
 from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
-import xgboost as xgb
+from sklearn.metrics import classification_report
 
 categories = ['developing', 'maturing', 'spawning', 'spent']
 
 # Load saved features
-pick_in = open('CTGAFmalefeaturefile.pickle', 'rb')
+pick_in = open('CTGAFmaleupdatedFeatures.pickle', 'rb')
 data = pickle.load(pick_in)
 pick_in.close()
 print("Number of samples:", len(data))
@@ -51,49 +52,46 @@ print("Class distribution:", dict(zip(*np.unique(ytrain, return_counts=True))))
 
 svc_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (random_state=42)),
     ('smote', SMOTE(random_state=42)),
+    ('pca', PCA (random_state=42)),
     ('SVC', SVC (random_state=42, probability=True))
 ])
 
 rf_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (random_state=42)),
     ('smote', SMOTE(random_state=42)),
     ('Random Forest', RandomForestClassifier(random_state=42))
 ])
 
 knn_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (random_state=42)),
     ('smote', SMOTE(random_state=42)),
+    ('pca', PCA (random_state=42)),
     ('KNN', KNeighborsClassifier())
 ])
 
 lr_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (random_state=42)),
     ('smote', SMOTE(random_state=42)),
+    ('pca', PCA (random_state=42)),
     ('Logistic Regression', LogisticRegression(random_state=42))
 ])
 
 mlp_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (random_state=42)),
     ('smote', SMOTE(random_state=42)),
+    ('pca', PCA (random_state=42)),
     ('MLP', MLPClassifier(random_state=42))
 ])
 
 gb_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (random_state=42)),
     ('smote', SMOTE(random_state=42)),
     ('Gradient Boosting', GradientBoostingClassifier(random_state=42))
 ])
 
 xgboost_model = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA (random_state=42)),
     ('smote', SMOTE(random_state=42)),
     ('XGBoost', xgb.XGBClassifier(random_state=42, eval_metric='mlogloss'))
 ])
@@ -127,7 +125,6 @@ rf_param_grid = {
     'Random Forest__n_estimators': [100, 200, 300],
     'Random Forest__max_depth': [None, 10, 20, 30],
     'Random Forest__min_samples_split': [2, 5, 10],
-    'pca__n_components': [0.90, 0.95, 0.99]
 }
 
 rf_grid = GridSearchCV(rf_model, rf_param_grid, cv=5, scoring='f1_weighted', n_jobs=-1)
@@ -181,7 +178,6 @@ gb_param_grid = {
     'Gradient Boosting__n_estimators': [100, 200, 300],
     'Gradient Boosting__learning_rate': [0.01, 0.1, 0.2],
     'Gradient Boosting__max_depth': [3, 5, 7],
-    'pca__n_components': [0.90, 0.95, 0.99]
 }
 
 gb_grid = GridSearchCV(gb_model, gb_param_grid, cv=5, scoring='f1_weighted', n_jobs=-1)
@@ -192,21 +188,9 @@ xgb_param_grid = {
     'XGBoost__n_estimators': [100, 200, 300],
     'XGBoost__learning_rate': [0.01, 0.1, 0.2],
     'XGBoost__max_depth': [3, 5, 7],
-    'pca__n_components': [0.90, 0.95, 0.99]
 }
 xgb_grid = GridSearchCV(xgboost_model, xgb_param_grid, cv=5, scoring='f1_weighted', n_jobs=-1)
 xgb_grid.fit(xtrain, ytrain)
-
-# # Train SVM
-# svc_model.fit(xtrain, ytrain)
-# rf_model.fit(xtrain, ytrain)
-# knn_model.fit(xtrain, ytrain)
-# lr_model.fit(xtrain, ytrain)
-# mlp_model.fit(xtrain, ytrain)
-
-# Save model
-# with open('svm_model.pickle', 'wb') as pf:
-#     pickle.dump(pipe, pf)
 
 #Overwrite models with best estimators from grid search
 best_svc_model = svc_grid.best_estimator_
@@ -218,33 +202,58 @@ best_gb_model = gb_grid.best_estimator_
 best_xgb_model = xgb_grid.best_estimator_
 
 ##EVALUATION
-kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-precision_weighted = make_scorer(precision_score, average='weighted', zero_division=0)
+# kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+# precision_weighted = make_scorer(precision_score, average='weighted', zero_division=0)
 # recall_macro = make_scorer(recall_score, average='macro', zero_division=0)
 # f1_weighted = make_scorer(f1_score, average='weighted', zero_division=0)
 
-def evaluate_model(name, model, xtrain, ytrain, kf):
-    print(f"Evaluating {name}...")
-    acc = cross_val_score(model, xtrain, ytrain, cv=kf, scoring='accuracy')
-    precision = cross_val_score(model, xtrain, ytrain, cv=kf, scoring=precision_weighted)
-    recall_macro = cross_val_score(model, xtrain, ytrain, cv=kf, scoring='recall_macro')
-    f1 = cross_val_score(model, xtrain, ytrain, cv=kf, scoring='f1_weighted')
-    roc_auc = cross_val_score(model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr_weighted')
+# def evaluate_model(name, model, xtrain, ytrain, kf):
+#     print(f"Evaluating {name}...")
+#     acc = cross_val_score(model, xtrain, ytrain, cv=kf, scoring='accuracy')
+#     precision = cross_val_score(model, xtrain, ytrain, cv=kf, scoring=precision_weighted)
+#     recall_macro = cross_val_score(model, xtrain, ytrain, cv=kf, scoring='recall_macro')
+#     f1 = cross_val_score(model, xtrain, ytrain, cv=kf, scoring='f1_weighted')
+#     roc_auc = cross_val_score(model, xtrain, ytrain, cv=kf, scoring='roc_auc_ovr_weighted')
 
-    print(f"{name} Cross-validation scores:")
-    print(f"\tAccuracy          : {acc} \tmean: {np.mean(acc):.2f} standard deviation: {np.std(acc):.2f}")
-    print(f"\tPrecision         : {precision} \tmean: {np.mean(precision):.2f} standard deviation: {np.std(precision):.2f}")
-    print(f"\tRecall            : {recall_macro} \tmean: {np.mean(recall_macro):.2f} standard deviation: {np.std(recall_macro):.2f}")
-    print(f"\tF1                : {f1} \tmean: {np.mean(f1):.2f} standard deviation: {np.std(f1):.2f}")
-    print(f"\tROC_AUC           : {roc_auc} \tmean: {np.mean(roc_auc):.2f} standard deviation: {np.std(roc_auc):.2f}")
+#     print(f"{name} Cross-validation scores:")
+#     print(f"\tAccuracy          : {acc} \tmean: {np.mean(acc):.2f} standard deviation: {np.std(acc):.2f}")
+#     print(f"\tPrecision         : {precision} \tmean: {np.mean(precision):.2f} standard deviation: {np.std(precision):.2f}")
+#     print(f"\tRecall            : {recall_macro} \tmean: {np.mean(recall_macro):.2f} standard deviation: {np.std(recall_macro):.2f}")
+#     print(f"\tF1                : {f1} \tmean: {np.mean(f1):.2f} standard deviation: {np.std(f1):.2f}")
+#     print(f"\tROC_AUC           : {roc_auc} \tmean: {np.mean(roc_auc):.2f} standard deviation: {np.std(roc_auc):.2f}")
 
-evaluate_model("SVC", best_svc_model, xtrain, ytrain, kf)
-evaluate_model("Random Forest", best_rf_model, xtrain, ytrain, kf)
-evaluate_model("KNN", best_knn_model, xtrain, ytrain, kf)
-evaluate_model("Logistic Regression", best_lr_model, xtrain, ytrain, kf)
-evaluate_model("MLP", best_mlp_model, xtrain, ytrain, kf)
-evaluate_model("Gradient Boosting", gb_model, xtrain, ytrain, kf)
-evaluate_model("XGBoost",best_xgb_model, xtrain, ytrain, kf)
+# evaluate_model("SVC", best_svc_model, xtrain, ytrain, kf)
+# evaluate_model("Random Forest", best_rf_model, xtrain, ytrain, kf)
+# evaluate_model("KNN", best_knn_model, xtrain, ytrain, kf)
+# evaluate_model("Logistic Regression", best_lr_model, xtrain, ytrain, kf)
+# evaluate_model("MLP", best_mlp_model, xtrain, ytrain, kf)
+# evaluate_model("Gradient Boosting", best_gb_model, xtrain, ytrain, kf)
+# evaluate_model("XGBoost",best_xgb_model, xtrain, ytrain, kf)
+
+print("Best SVC CV score:", svc_grid.best_score_)
+print("Best RF CV score:", rf_grid.best_score_)
+print("Best KNN CV score:", knn_grid.best_score_)
+print("Best LR CV score:", lr_grid.best_score_)
+print("Best MLP CV score:", mlp_grid.best_score_)
+print("Best GB CV score:", gb_grid.best_score_)
+print("Best XGB CV score:", xgb_grid.best_score_)
+
+def test_evaluate(name, model):
+    y_pred = model.predict(xtest)
+    
+    print(f"\n{name} Test Performance:")
+    print("Accuracy:", accuracy_score(ytest, y_pred))
+    f1 = f1_score(ytest, y_pred, average='weighted', zero_division=0)
+    print("F1 Score (weighted):", f1)
+    print(classification_report(ytest, y_pred, target_names=categories))
+
+test_evaluate("SVC", best_svc_model)
+test_evaluate("Random Forest", best_rf_model)
+test_evaluate("KNN", best_knn_model)
+test_evaluate("Logistic Regression", best_lr_model)
+test_evaluate("MLP", best_mlp_model)
+test_evaluate("Gradient Boosting", best_gb_model)
+test_evaluate("XGBoost", best_xgb_model)
 
 #Confusion Matrix
 ConfusionMatrixDisplay.from_estimator(best_svc_model, xtest, ytest, display_labels=categories, cmap=plt.cm.Blues)
@@ -259,6 +268,7 @@ ConfusionMatrixDisplay.from_estimator(best_mlp_model, xtest, ytest, display_labe
 plt.title("MLP Confusion Matrix")
 ConfusionMatrixDisplay.from_estimator(best_gb_model, xtest, ytest, display_labels=categories, cmap=plt.cm.Blues)
 plt.title("Gradient Boosting Confusion Matrix")
+plt.show()
 ConfusionMatrixDisplay.from_estimator(best_xgb_model, xtest, ytest, display_labels=categories, cmap=plt.cm.Blues)
 plt.title("XGBoost Confusion Matrix")
 plt.show()
