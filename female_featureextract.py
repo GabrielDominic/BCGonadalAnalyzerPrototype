@@ -37,7 +37,7 @@ def preprocess_image_segmented(img):
         A_blur, 0, 255,
         cv2.THRESH_BINARY + cv2.THRESH_OTSU
     )
-
+    #hello
     kernel = np.ones((7, 7), np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=3)
@@ -56,7 +56,6 @@ def preprocess_image_segmented(img):
     return img_crop
 
 
-
 def preprocess_image_clean(img):
     img = cv2.resize(img, (256, 256))
     return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -70,7 +69,7 @@ def extract_edge_features(img_gray):
     # Edge density via Canny
     edges = cv2.Canny(img_gray, 50, 150)
     edge_density = edges.mean()  # proportion of edge pixels
-    # cv2.imshow('edges', edges)
+    cv2.imshow('edges', edges)
 
     # Simple statistics
     sobel_mean = sobel_mag.mean()
@@ -141,110 +140,186 @@ def extract_morph_features(img_gray):
 
     return np.array([area_foreground, area_contour, circularity], dtype=np.float32)
 
-## #Data Preparation
-dir = 'C:\\4th yr 2nd Sem\\CMSC 198.2\\BCGonadalAnalyzerPrototype\\imagedataset\\FemaleGonads\\Spent_F'
-categories = ['developing','maturing','spawning', 'spent']
+def extract_gamete_area(img_gray, image, category):
+    ##TISSUE MASK##
+    #Otsu's Thresholding to create a binary mask of the tissue
+    ret, tissue_mask = cv2.threshold(img_gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    cv2.imshow('Tissue Mask', tissue_mask)
 
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    tissue_mask = cv2.morphologyEx(tissue_mask, cv2.MORPH_OPEN, kernel, iterations=2)
+    total_tissue_pixels = cv2.countNonZero(tissue_mask)
+
+    #Calculate Gamete Area
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+    lower_red = np.array([130, 80, 80])
+    upper_red = np.array([170, 255, 255])
+    #Variation in histological slides 
+    # print(f'Folder name: {folder_name}')
+    # if folder_name == 'M':
+    #     lower_red = np.array([110, 40, 20])
+    #     upper_red = np.array([170, 255, 150])
+    # elif folder_name == 'F':
+    #     lower_red = np.array([110, 40, 20])
+    #     upper_red = np.array([170, 255, 200])
+
+    gamete_mask = cv2.inRange(hsv, lower_red, upper_red)
+    gamete_mask = cv2.morphologyEx(gamete_mask, cv2.MORPH_OPEN, kernel, iterations=2)
+    gamete_mask = cv2.bitwise_and(gamete_mask, gamete_mask, mask=tissue_mask)
+    gamete_pixels = cv2.countNonZero(gamete_mask)
+
+    #CALCULATE GAMETE VOLUME AREA FRACTION
+    if total_tissue_pixels > 0:
+        area_fraction = gamete_pixels / total_tissue_pixels
+    else:
+        area_fraction = 0
+    print("Total Tissue Pixels:", total_tissue_pixels)
+    print("Gamete pixels:", gamete_pixels)
+    print("Gamete Area Fraction:", area_fraction)
+
+    return np.array([total_tissue_pixels, gamete_pixels, area_fraction], dtype=np.float32)
+
+# def extract_gamete_count(img_gray):
+#     params = cv2.SimpleBlobDetector_Params()
+#     params.filterByArea = True
+#     params.minArea = 80
+#     params.maxArea = 5000
+#     params.filterByCircularity = True
+#     params.minCircularity = 0.5
+
+#     detector = cv2.SimpleBlobDetector_create(params)
+#     keypoints = detector.detect(img_gray)
+
+#     return np.array([len(keypoints)], dtype=np.float32)
+
+# def extract_white_space(img_gray):
+#     _, thresh = cv2.threshold(img_gray, 200, 255, cv2.THRESH_BINARY)
+#     white_pixels = cv2.countNonZero(thresh)
+#     total_pixels = img_gray.shape[0] * img_gray.shape[1]
+
+#     ratio = white_pixels / total_pixels
+
+#     return np.array([white_pixels, ratio], dtype=np.float32)
+
+
+# def extract_acinus_wall_features(img_gray):
+#     edges = cv2.Canny(img_gray, 100, 200)
+
+#     edge_pixels = cv2.countNonZero(edges)
+#     total_pixels = img_gray.shape[0] * img_gray.shape[1]
+
+#     density = edge_pixels / total_pixels
+#     has_acinus_wall = 1 if density > 0.02 else 0
+#     return np.array([edge_pixels, density], dtype=np.float32)
+
+## #Data Preparation
+dir = "C:\\4th yr 2nd Sem\CMSC 198.2\BCGonadalAnalyzerPrototype\imagedataset\FemaleNormalized"
+categories = ['developing','maturing','spawning','spent']
+
+folder_name = os.path.basename(dir)
 data = []
 feature_vectors = []
 labels = []
-images_original = []
-images_segmented = []      
+images_original = []      
 filenames = []
 
-# for category in categories:
-label = 3  # spent
-for img_name in os.listdir(dir):
-    img_path = os.path.join(dir, img_name)
-    try:    
-        img = cv2.imread(img_path, cv2.IMREAD_COLOR)
-        if img is None:
-            print(f'Image not found or unreadable: {img_path}')
-    
-        #Preprocessing
-        clean_img = preprocess_image_clean(img)
-        images_original.append(clean_img)
-        seg_img = preprocess_image_segmented(img)
-        images_segmented.append((seg_img, img_path))
+for category in categories:
+    images_segmented = []    
+    path = os.path.join(dir, category)
+    label = categories.index(category)
 
-        #Feature Extraction
-        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    for img in os.listdir(path):
+        img_path = os.path.join(path, img)
+        try:    
+            img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+            if img is None:
+                print(f'Image not found or unreadable: {img_path}')
+        
+            #Preprocessing
+            clean_img = preprocess_image_clean(img)
+            images_original.append(clean_img)
+            seg_img = preprocess_image_segmented(img)
+            images_segmented.append((seg_img, img_path))
 
-        glcm_feat = extract_glcm(gray)
-        print(f'GLCM features for {img_path}')
-        lbp_feat = extract_lbp(gray)
-        print(f'LBP features for {img_path}')
-        cm_feat = extract_color_moments(img)
-        print(f'Color moments for {img_path}')
-        morph_feat = extract_morph_features(gray)
-        print(f'Morphological features for {img_path}')
-        edge = extract_edge_features(gray)
-        print(f'Edge features for {img_path}')
+            #Feature Extraction
+            gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
-        full_feature = np.hstack([glcm_feat, lbp_feat, cm_feat, morph_feat, edge])
-        labels.append(label)
-        filenames.append(img_path)
-        data.append([full_feature, label, img_path])
-    except Exception as e:
-        print(f'Failed to process {img_path}: {e}')
+            glcm_feat = extract_glcm(gray)
+            print(f'GLCM features for {img_path}')
+            lbp_feat = extract_lbp(gray)
+            print(f'LBP features for {img_path}')
+            cm_feat = extract_color_moments(img)
+            print(f'Color moments for {img_path}')
+            morph_feat = extract_morph_features(gray)
+            print(f'Morphological features for {img_path}')
+            edge = extract_edge_features(gray)
+            print(f'Edge features for {img_path}')
+            gamete_area = extract_gamete_area(gray, img, folder_name)
+            print(f'Gamete area features for {img_path}')
+            # gamete_count = extract_gamete_count(gray)
+            # print(f'Gamete Count: {gamete_count[0]}')
+            # white_space = extract_white_space(gray)
+            # acinus_wall = extract_acinus_wall_features(gray)
+            # print(f"Acinus wall present: {'YES' if acinus_wall[2] == 1 else 'NO'}")
+
+            full_feature = np.hstack([glcm_feat, lbp_feat, cm_feat, morph_feat, edge, gamete_area])
+            labels.append(label)
+            filenames.append(img_path)
+            data.append([full_feature, label, img_path])
+        except Exception as e:
+            print(f'Failed to process {img_path}: {e}')
 
 print(f'Features Extracted: {len(data)}')
 print("Loaded:", len(images_original), "images")
 
 # Saving Data
-pick_in = open('femalespentfeaturefile.pickle', 'wb')
+pick_in = open('completefemalefeaturefile.pickle', 'wb')
 pickle.dump(data, pick_in)
 pick_in.close()
 
-# Saving Preprocessed Images
-pick_in = open('femalespent_images_original.pickle', 'wb')
-pickle.dump(images_original, pick_in)
-pick_in.close()
+# #Preprocess a single image for testing
+# test_img_path = 'C:\\GitProjects\\BCGonadalAnalyzerPrototype\\imagedataset\\F\\developing\\18 F-Developing.jpg'
+# img = cv2.imread(test_img_path, cv2.IMREAD_COLOR)
+# if img is None:
+#     print(f'Image not found or unreadable: {test_img_path}')
 
-pick_in = open('femalespent_images_segmented.pickle', 'wb')
-pickle.dump(images_segmented, pick_in)
-pick_in.close()
+# #Preprocessing
+# clean_img = preprocess_image_clean(img)
+# images_original.append(clean_img)
+# seg_img = preprocess_image_segmented(img)
+# images_segmented.append((seg_img, test_img_path))
 
-#Preprocess a single image for testing
-test_img_path = 'C:\\4th yr 2nd Sem\\CMSC 198.2\\BCGonadalAnalyzerPrototype\\imagedataset\\FemaleGonads\\Spent_F\\1-F-Spent-10x.jpg'
-img = cv2.imread(test_img_path, cv2.IMREAD_COLOR)
-if img is None:
-    print(f'Image not found or unreadable: {test_img_path}')
+# #Feature Extraction
+# gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
-#Preprocessing
-clean_img = preprocess_image_clean(img)
-images_original.append(clean_img)
-seg_img = preprocess_image_segmented(img)
-images_segmented.append((seg_img, test_img_path))
+# glcm_feat = extract_glcm(gray)
+# print(f'GLCM features for {test_img_path}')
+# lbp_feat = extract_lbp(gray)
+# print(f'LBP features for {test_img_path}')
+# cm_feat = extract_color_moments(img)
+# print(f'Color moments for {test_img_path}')
+# morph_feat = extract_morph_features(gray)
+# print(f'Morphological features for {test_img_path}')
+# edge = extract_edge_features(gray)
+# print(f'Edge features for {test_img_path}')
+# gamete_area = extract_gamete_area(gray, img)
+# print(f'Gamete area features for {test_img_path}')
 
-#Feature Extraction
-gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+# full_feature = np.hstack([glcm_feat, lbp_feat, cm_feat, morph_feat, edge, gamete_area])
+# feat_img = full_feature.reshape(-1, 1)  # make it tall
+# feat_img = (feat_img - feat_img.min()) / (feat_img.max() - feat_img.min())  # normalize 0–1
+# feat_img = (feat_img * 255).astype(np.uint8)
+# cv2.imshow('segmented', seg_img)
+# cv2.imshow('original', clean_img)
+# cv2.imshow('feature_vector', feat_img)
 
-glcm_feat = extract_glcm(gray)
-print(f'GLCM features for {test_img_path}')
-lbp_feat = extract_lbp(gray)
-print(f'LBP features for {test_img_path}')
-cm_feat = extract_color_moments(img)
-print(f'Color moments for {test_img_path}')
-morph_feat = extract_morph_features(gray)
-print(f'Morphological features for {test_img_path}')
-edge = extract_edge_features(gray)
-print(f'Edge features for {test_img_path}')
+# plt.figure(figsize=(12,4))
+# plt.plot(full_feature)
+# plt.title("Feature Vector")
+# plt.xlabel("Feature Index")
+# plt.ylabel("Value")
+# plt.show()
 
-full_feature = np.hstack([glcm_feat, lbp_feat, cm_feat, morph_feat, edge])
-feat_img = full_feature.reshape(-1, 1)  # make it tall
-feat_img = (feat_img - feat_img.min()) / (feat_img.max() - feat_img.min())  # normalize 0–1
-feat_img = (feat_img * 255).astype(np.uint8)
-cv2.imshow('segmented', seg_img)
-cv2.imshow('original', clean_img)
-cv2.imshow('feature_vector', feat_img)
-
-plt.figure(figsize=(12,4))
-plt.plot(full_feature)
-plt.title("Feature Vector")
-plt.xlabel("Feature Index")
-plt.ylabel("Value")
-plt.show()
-
-cv2.waitKey(0)
+# cv2.waitKey(0)
 cv2.destroyAllWindows()

@@ -1,4 +1,6 @@
 imagedataset/
+output_images/
+reference_images/
 *.png
 *.jpg
 *.jpeg
@@ -6,3 +8,5 @@ imagedataset/
 Scripts/
 .vscode/
 __pycache__/
+tf_env/
+.venv-1/

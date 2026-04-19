@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set "VIRTUAL_ENV=C:\GitProjects\BCGonadalAnalyzerPrototype\tf_env"
+set VIRTUAL_ENV=C:\4th yr 2nd Sem\CMSC 198.2\BCGonadalAnalyzerPrototype\tf_env
 
 if not defined PROMPT set PROMPT=$P$G
 
@@ -24,8 +24,8 @@ set PYTHONHOME=
 if defined _OLD_VIRTUAL_PATH set PATH=%_OLD_VIRTUAL_PATH%
 if not defined _OLD_VIRTUAL_PATH set _OLD_VIRTUAL_PATH=%PATH%
 
-set "PATH=%VIRTUAL_ENV%\Scripts;%PATH%"
-set "VIRTUAL_ENV_PROMPT=(tf_env) "
+set PATH=%VIRTUAL_ENV%\Scripts;%PATH%
+set VIRTUAL_ENV_PROMPT=(tf_env) 
 
 :END
 if defined _OLD_CODEPAGE (
