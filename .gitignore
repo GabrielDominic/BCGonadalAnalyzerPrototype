@@ -10,3 +10,10 @@ Scripts/
 __pycache__/
 tf_env/
 .venv-1/
+
+normalized_updated_dataset/
+*.png
+*.jpg
+*.jpeg
+
+
