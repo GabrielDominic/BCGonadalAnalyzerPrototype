@@ -3,6 +3,9 @@ imagedataset/
 *.jpg
 *.jpeg
 
-Histological Slides/
-Histological Slides - Female/
-Histological Slides - Male/
+normalized_updated_dataset/
+*.png
+*.jpg
+*.jpeg
+
+

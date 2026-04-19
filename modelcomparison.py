@@ -21,6 +21,8 @@ categories = ['developing', 'maturing', 'spawning', 'spent']
 
 # Load saved features
 pick_in = open('CTGAFmaleupdatedFeatures.pickle', 'rb')
+#No LBP
+# pick_in = open('noLBPmaleupdatedFeatures.pickle', 'rb')
 data = pickle.load(pick_in)
 pick_in.close()
 print("Number of samples:", len(data))

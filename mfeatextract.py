@@ -261,8 +261,9 @@ for category in categories:
             gamete_times.append(end - start)
             print(f'Gamete area features for {img_path} took {end - start:.2f} seconds')
 
+            # full_feature = np.hstack([glcm_feat, cm_feat, morph_feat, edge, gamete_area])
             full_feature = np.hstack([glcm_feat, lbp_feat, cm_feat, morph_feat, edge, gamete_area])
-            # full_feature = np.hstack([lbp_feat, cm_feat, morph_feat, edge])
+
             labels.append(label)
             filenames.append(img_path)
             data.append([full_feature, label, img_path])

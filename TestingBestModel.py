@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -48,11 +49,12 @@ xtrain, xtest, ytrain, ytest, ftrain, ftest = train_test_split(
 
 pipe = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA(n_components=0.99, svd_solver='full', random_state=42)),
     ('smote', SMOTE(random_state=42)),
+    # ('pca', PCA(n_components=0.99, svd_solver='full', random_state=42)),
     # # ('MLP', MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=1000, random_state=42))
     # ('Random Forest', RandomForestClassifier(n_estimators=300, max_depth=10, random_state=42, min_samples_split=2))
-    ('SVC', SVC (kernel='rbf', C=10,  gamma='scale', random_state=42, probability=True))
+    ('Gradient Boosting', GradientBoostingClassifier(n_estimators=100, learning_rate=0.2, max_depth=5, random_state=42))
+    # ('SVC', SVC (kernel='rbf', C=10,  gamma='scale', random_state=42, probability=True))
 ])
 # # # # #Scale
 # scaler = StandardScaler()

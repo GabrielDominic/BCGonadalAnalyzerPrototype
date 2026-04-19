@@ -77,6 +77,11 @@ def analyze_LBP_mean(pickle_file):
         data = pickle.load(f)
         #Analyze LBP
 
+def analyze_Color_Moments(pickle_file):
+    with open(pickle_file, 'rb') as f:
+        data = pickle.load(f)
+        #Analyze Color Moments
+
 def analyze_Sobel_features(pickle_file):
     with open(pickle_file, 'rb') as f:
         data = pickle.load(f)
