@@ -272,7 +272,7 @@ for category in categories:
 
 print(f'Features Extracted: {len(data)}')
 print("Loaded:", len(images_original), "images")
-
+#remove acinus
 # Saving Data
 pick_in = open('completefemalefeaturefile.pickle', 'wb')
 pickle.dump(data, pick_in)

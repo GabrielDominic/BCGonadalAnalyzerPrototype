@@ -55,8 +55,6 @@ def preprocess_image_segmented(img):
 
     return img_crop
 
-
-
 def preprocess_image_clean(img):
     img = cv2.resize(img, (256, 256))
     return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
