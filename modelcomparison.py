@@ -257,12 +257,12 @@ import pandas as pd
 # feature importance from the Gradient Boosting step of the pipeline
 importances = best_gb_model.named_steps['Gradient Boosting'].feature_importances_
 
-# Define P for LBP features
-P = 24
-
 # list of feature names in the order they are concatenated
 glcm_names = ['contrast_mean', 'contrast_std', 'homogeneity_mean', 'homogeneity_std', 
               'energy_mean', 'energy_std', 'correlation_mean', 'correlation_std']
+
+# Define P for LBP features
+P = 24
 lbp_names = [f'lbp_bin_{i}' for i in range(P + 2)]  # 26 bins
 cm_names = ['R_mean', 'R_std', 'R_skew', 'G_mean', 'G_std', 'G_skew', 'B_mean', 'B_std', 'B_skew']
 morph_names = ['area_foreground', 'area_contour', 'circularity']
