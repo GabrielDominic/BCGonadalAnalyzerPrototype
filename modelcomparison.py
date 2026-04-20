@@ -215,6 +215,8 @@ print("Best MLP CV score:", mlp_grid.best_score_)
 print("Best GB CV score:", gb_grid.best_score_)
 print("Best XGB CV score:", xgb_grid.best_score_)
 
+
+#Evaluate on test set
 def test_evaluate(name, model):
     y_pred = model.predict(xtest)
     
@@ -248,3 +250,26 @@ plt.title("Gradient Boosting Confusion Matrix")
 ConfusionMatrixDisplay.from_estimator(best_xgb_model, xtest, ytest, display_labels=categories, cmap=plt.cm.Blues)
 plt.title("XGBoost Confusion Matrix")
 plt.show()
+
+
+import pandas as pd
+
+# feature importance from the Gradient Boosting step of the pipeline
+importances = best_gb_model.named_steps['Gradient Boosting'].feature_importances_
+
+# Define P for LBP features
+P = 24
+
+# list of feature names in the order they are concatenated
+glcm_names = ['contrast_mean', 'contrast_std', 'homogeneity_mean', 'homogeneity_std', 
+              'energy_mean', 'energy_std', 'correlation_mean', 'correlation_std']
+lbp_names = [f'lbp_bin_{i}' for i in range(P + 2)]  # 26 bins
+cm_names = ['R_mean', 'R_std', 'R_skew', 'G_mean', 'G_std', 'G_skew', 'B_mean', 'B_std', 'B_skew']
+morph_names = ['area_foreground', 'area_contour', 'circularity']
+edge_names = ['sobel_mean', 'sobel_std', 'edge_density']
+gamete_names = ['total_tissue_pixels', 'gamete_pixels', 'area_fraction']
+
+feature_names = glcm_names + lbp_names + cm_names + morph_names + edge_names + gamete_names
+
+feature_df = pd.DataFrame({'Feature': feature_names, 'Importance': importances})
+print(feature_df.sort_values(by='Importance', ascending=False))
