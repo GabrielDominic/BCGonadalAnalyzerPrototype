@@ -1,0 +1,36 @@
+*   [33mb460b6a[m[33m ([m[1;36mHEAD -> [m[1;32mfemale_featureextract[m[33m, [m[1;31morigin/GameteVolumeAreaFraction[m[33m, [m[1;32mGameteVolumeAreaFraction[m[33m)[m minor changes
+[31m|[m[32m\[m  
+[31m|[m * [33m450b971[m[33m ([m[1;31morigin/ExperimentingwithFeatures[m[33m)[m Minor updates
+[31m|[m * [33m26465d2[m Feature Analysis update
+[31m|[m * [33m36d9351[m Reference Images
+[31m|[m *   [33m29f145d[m Merge branch 'main' into ExperimentingwithFeatures
+[31m|[m [33m|[m[34m\[m  
+[31m|[m [33m|[m * [33m1dd1221[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Clustering Files
+[31m|[m * [34m|[m [33ma617c97[m Fixed Overoptimistic Evaluation scores by removing extra Crossvalidation on xtest
+[31m|[m * [34m|[m [33m8f01458[m Feat: Added Average Feature Extraction time
+[31m|[m * [34m|[m [33m267c0fa[m Included XGboost and GradientBoost
+* [34m|[m [34m|[m [33maf1367b[m[33m ([m[1;31morigin/female_featureextract[m[33m, [m[1;32mExperimentingwithFeatures[m[33m)[m modified features
+* [34m|[m [34m|[m [33m1e982b5[m test feature, remove gamete count and acinus wall
+* [34m|[m [34m|[m [33md44f69f[m Merge branch 'ExperimentingwithFeatures' into female_featureextract
+[35m|[m[34m\[m[34m|[m [34m|[m 
+[35m|[m * [34m|[m [33m89d86fe[m Experimenting
+* [36m|[m [34m|[m [33m9eb946f[m female feature extract
+[36m|[m[36m/[m [34m/[m  
+* [34m|[m [33m57a09d6[m Included color normalization and added  Gamete Volume Fraction Extraction
+* [34m|[m [33mf48606d[m[33m ([m[1;31morigin/Supervised[m[33m, [m[1;32mSupervised[m[33m)[m Latest changes
+* [34m|[m [33m0c3274a[m Included Confusion Matrix and Permutation Importance
+* [34m|[m [33maeebced[m Included Hyperparameter tuning for models and PCA
+* [34m|[m [33m4059be5[m Included SMOTE for oversampling
+* [34m|[m [33m6257517[m Included pickle files for extracted images
+* [34m|[m [33mfc9e8c1[m Updated Feature Extraction for Females and Males Seprately
+* [34m|[m [33m207008a[m Utilized different Scikit supervised models to assess their accuracy based on the dataset
+* [34m|[m [33m3f9e3e0[m Refactored SVM  model
+[34m|[m[34m/[m  
+[34m|[m * [33m344072c[m[33m ([m[1;31morigin/clustering[m[33m)[m Create clustering.py
+[34m|[m[34m/[m  
+* [33m5dd07bb[m Trained model with updated dataset
+* [33m578da1e[m populate image dataset with spawning and spent images
+* [33ma05f8d1[m Added Feature Extract
+* [33m43d74e8[m First Iteration of the ML Prototype using  SVM
+* [33m5748c0f[m Setup
+* [33m121bb6e[m Initial commit
