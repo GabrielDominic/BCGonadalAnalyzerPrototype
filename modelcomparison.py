@@ -21,6 +21,8 @@ categories = ['developing', 'maturing', 'spawning', 'spent']
 
 # Load saved features
 pick_in = open('CTGAFmaleupdatedFeatures.pickle', 'rb')
+#No Color Moments
+# pick_in = open('NoColorMmaleupdatedFeatures.pickle', 'rb')
 #No LBP
 # pick_in = open('noLBPmaleupdatedFeatures.pickle', 'rb')
 data = pickle.load(pick_in)
@@ -269,6 +271,7 @@ morph_names = ['area_foreground', 'area_contour', 'circularity']
 edge_names = ['sobel_mean', 'sobel_std', 'edge_density']
 gamete_names = ['total_tissue_pixels', 'gamete_pixels', 'area_fraction']
 
+# feature_names = glcm_names + lbp_names + morph_names + edge_names + gamete_names
 feature_names = glcm_names + lbp_names + cm_names + morph_names + edge_names + gamete_names
 
 feature_df = pd.DataFrame({'Feature': feature_names, 'Importance': importances})
