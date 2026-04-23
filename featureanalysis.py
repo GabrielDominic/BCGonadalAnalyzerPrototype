@@ -224,18 +224,18 @@ def analyze_GAF_mean(pickle_file):
         mean_total_tissue = np.mean(values[:, 0])
         mean_gamete_pixels = np.mean(values[:, 1])
         mean_area_fraction = np.mean(values[:, 2])
-        std_total_tissue = np.std(values[:, 0])
-        std_gamete_pixels = np.std(values[:, 1])
-        std_area_fraction = np.std(values[:, 2])
+        # std_total_tissue = np.std(values[:, 0])
+        # std_gamete_pixels = np.std(values[:, 1])
+        # std_area_fraction = np.std(values[:, 2])
 
         print(f'{name.capitalize()} means:')
         print(f'  total_tissue_pixels: {mean_total_tissue:.4f}')
         print(f'  gamete_pixels: {mean_gamete_pixels:.4f}')
         print(f'  gamete_area_fraction: {mean_area_fraction:.4f}')
-        print(f'{name.capitalize()} std devs:')
-        print(f'  total_tissue_pixels: {std_total_tissue:.4f}')
-        print(f'  gamete_pixels: {std_gamete_pixels:.4f}')
-        print(f'  gamete_area_fraction: {std_area_fraction:.4f}\n')
+        # print(f'{name.capitalize()} std devs:')
+        # print(f'  total_tissue_pixels: {std_total_tissue:.4f}')
+        # print(f'  gamete_pixels: {std_gamete_pixels:.4f}')
+        # print(f'  gamete_area_fraction: {std_area_fraction:.4f}\n')
 
 #Change Name to corresponding extracted features file
 pickle_file = 'CTGAFmaleupdatedFeatures.pickle' #Male Samples
