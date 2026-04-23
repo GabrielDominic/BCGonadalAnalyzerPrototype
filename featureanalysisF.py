@@ -121,10 +121,16 @@ def analyze_Sobel_features(pickle_file):
         print(f'  std_edge_density: {std_edge_density:.4f}\n')
 
 
-pickle_files = ['completefemalefeaturefile.pickle', 'femalefeaturefile.pickle']
-for pickle_file in pickle_files:
-    analyze_features_stat(pickle_file)
-    analyze_GAF_mean(pickle_file)
-    analyze_LBP_mean(pickle_file)
-    analyze_Color_Moments(pickle_file)
-    analyze_Sobel_features(pickle_file)
+# pickle_files = ['completefemalefeaturefile.pickle', 'femalefeaturefile.pickle']
+# for pickle_file in pickle_files:
+#     analyze_features_stat(pickle_file)
+#     analyze_GAF_mean(pickle_file)
+#     analyze_LBP_mean(pickle_file)
+#     analyze_Color_Moments(pickle_file)
+#     analyze_Sobel_features(pickle_file)
+
+pickle_file = 'finalfemalefeaturefile.pickle'
+analyze_features_stat(pickle_file)
+analyze_GAF_mean(pickle_file)
+analyze_LBP_mean(pickle_file)
+analyze_Sobel_features(pickle_file)

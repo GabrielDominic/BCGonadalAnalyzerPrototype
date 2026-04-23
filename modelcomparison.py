@@ -22,15 +22,16 @@ categories = ['developing', 'mature', 'spawning', 'spent']
 # Load saved features
 data = []
 
-files = ['completefemalefeaturefile.pickle', 'femalefeaturefile.pickle']
+# files = ['completefemalefeaturefile.pickle', 'femalefeaturefile.pickle']
 
-for fname in files:
-    with open(fname, 'rb') as f:
-        data.extend(pickle.load(f))  # combine datasets
+# for fname in files:
+#     with open(fname, 'rb') as f:
+#         data.extend(pickle.load(f))  # combine datasets
 #No LBP
-# pick_in = open('noLBPmaleupdatedFeatures.pickle', 'rb')
-#data = pickle.load(pick_in)
-#pick_in.close()
+pick_in = open('finalfemalefeaturefile.pickle', 'rb')
+data = pickle.load(pick_in)
+pick_in.close()
+
 print("Number of samples:", len(data))
 if len(data) > 0:
     print("First feature shape:", np.array(data[0][0]).shape)

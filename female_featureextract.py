@@ -214,8 +214,8 @@ def extract_gamete_area(img_gray, image, category):
 #     return np.array([edge_pixels, density], dtype=np.float32)
 
 ## #Data Preparation
-dir = "C:\\4th yr 2nd Sem\CMSC 198.2\BCGonadalAnalyzerPrototype\imagedataset\FemaleNormalized"
-categories = ['mature','spawning','spent']
+dir = "C:\\4th yr 2nd Sem\\CMSC 198.2\\BCGonadalAnalyzerPrototype\\imagedataset\\FemaleNormalized"
+categories = ['developing', 'mature','spawning','spent']
 
 folder_name = os.path.basename(dir)
 data = []
@@ -274,7 +274,7 @@ print(f'Features Extracted: {len(data)}')
 print("Loaded:", len(images_original), "images")
 #remove acinus
 # Saving Data
-pick_in = open('femalefeaturefile.pickle', 'wb')
+pick_in = open('finalfemalefeaturefile.pickle', 'wb')
 pickle.dump(data, pick_in)
 pick_in.close()
 
