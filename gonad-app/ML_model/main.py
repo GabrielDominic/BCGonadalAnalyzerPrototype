@@ -55,38 +55,38 @@ GAMETE_NAMES= ["total_tissue_pixels","gamete_pixels","area_fraction"]
 ALL_FEATURE_NAMES = GLCM_NAMES + LBP_NAMES + CM_NAMES + MORPH_NAMES + EDGE_NAMES + GAMETE_NAMES
 
 
-def preprocess_image(img: np.ndarray) -> np.ndarray:
-    # 1. Illumination correction via LAB
-    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-    L, A, B = cv2.split(lab)
-    L_blur = cv2.GaussianBlur(L, (99, 99), 0)
-    cv2.divide(lab[:, :, 0], L_blur, scale=255)   # side-effect correction
-    img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+# def preprocess_image(img: np.ndarray) -> np.ndarray:
+#     # 1. Illumination correction via LAB
+#     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+#     L, A, B = cv2.split(lab)
+#     L_blur = cv2.GaussianBlur(L, (99, 99), 0)
+#     cv2.divide(lab[:, :, 0], L_blur, scale=255)   # side-effect correction
+#     img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
 
-    img = cv2.bilateralFilter(img, 7, 40, 40)
+#     img = cv2.bilateralFilter(img, 7, 40, 40)
 
-    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-    L, A, B = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
-    L = clahe.apply(L)
-    img = cv2.cvtColor(cv2.merge([L, A, B]), cv2.COLOR_LAB2BGR)
+#     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+#     L, A, B = cv2.split(lab)
+#     clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
+#     L = clahe.apply(L)
+#     img = cv2.cvtColor(cv2.merge([L, A, B]), cv2.COLOR_LAB2BGR)
 
-    lab2 = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-    _, A2, _ = cv2.split(lab2)
-    A_blur = cv2.GaussianBlur(A2, (9, 9), 0)
-    _, mask = cv2.threshold(A_blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+#     lab2 = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+#     _, A2, _ = cv2.split(lab2)
+#     A_blur = cv2.GaussianBlur(A2, (9, 9), 0)
+#     _, mask = cv2.threshold(A_blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-    kernel = np.ones((7, 7), np.uint8)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN,  kernel, iterations=2)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=3)
+#     kernel = np.ones((7, 7), np.uint8)
+#     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN,  kernel, iterations=2)
+#     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=3)
 
-    coords = cv2.findNonZero(mask)
-    if coords is not None and np.sum(mask) >= 5000:
-        x, y, w, h = cv2.boundingRect(coords)
-        img = img[y:y+h, x:x+w]
+#     coords = cv2.findNonZero(mask)
+#     if coords is not None and np.sum(mask) >= 5000:
+#         x, y, w, h = cv2.boundingRect(coords)
+#         img = img[y:y+h, x:x+w]
 
-    img = cv2.resize(img, (256, 256))
-    return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+#     img = cv2.resize(img, (256, 256))
+#     return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 def extract_glcm(img_gray: np.ndarray) -> np.ndarray:
     glcm = graycomatrix(
