@@ -246,6 +246,11 @@ test_evaluate("MLP", best_mlp_model)
 test_evaluate("Gradient Boosting", best_gb_model)
 test_evaluate("XGBoost", best_xgb_model)
 
+with open('best_xgb_model.pickle', 'wb') as f:
+    pickle.dump(best_xgb_model, f)
+
+print("XGBoost model saved to best_xgb_model_F.pickle")
+
 #Confusion Matrix
 ConfusionMatrixDisplay.from_estimator(best_svc_model, xtest, ytest, display_labels=categories, cmap=plt.cm.Blues)
 plt.title("SVC Confusion Matrix")
