@@ -1,9 +1,3 @@
-"""
-FastAPI Backend — BC Gonadal Stage Analyzer
-Endpoints:
-  POST /predict  — accepts image + sex, returns prediction + features + probabilities
-"""
-
 import io
 import pickle
 import numpy as np
@@ -14,8 +8,9 @@ from pydantic import BaseModel
 from typing import List, Dict
 from skimage.feature.texture import graycomatrix, graycoprops
 from skimage.feature import local_binary_pattern
+from utils.normalization import reinhard_normalization
 
-# ── App setup ────────────────────────────────────────────────────────────────
+# ── App setup 
 app = FastAPI(title="BC Gonadal Stage Analyzer API", version="1.0.0")
 
 app.add_middleware(
@@ -26,24 +21,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Model loading ─────────────────────────────────────────────────────────────
-# Place your trained XGBoost model pickle in the same directory as main.py
-# and update the filename below if different.
-MODEL_PATH = "best_xgb_model_F.pkl"
+# ── Model loading 
+MODEL_F = pickle.load(open("best_xgb_model_F.pkl", "rb"))
+MODEL_M = pickle.load(open("best_xgb_model_M.pkl", "rb"))
 
-try:
-    with open(MODEL_PATH, "rb") as f:
-        MODEL = pickle.load(f)
-    print(f"[OK] Model loaded from {MODEL_PATH}")
-except FileNotFoundError:
-    print(f"[WARN] Model file '{MODEL_PATH}' not found. /predict will fail until model is present.")
-    MODEL = None
+# try:
+#     with open(MODEL_PATH, "rb") as f:
+#         MODEL = pickle.load(f)
+#     print(f"[OK] Model loaded from {MODEL_PATH}")
+# except FileNotFoundError:
+#     print(f"[WARN] Model file '{MODEL_PATH}' not found. /predict will fail until model is present.")
+#     MODEL = None
 
-# ── Label maps ────────────────────────────────────────────────────────────────
 MALE_CATEGORIES   = ["developing", "maturing", "spawning", "spent"]
 FEMALE_CATEGORIES = ["developing", "mature",   "spawning", "spent"]
 
-# ── Feature names (matches extraction order in your code) ────────────────────
 GLCM_NAMES  = ["contrast_mean","contrast_std","homogeneity_mean","homogeneity_std",
                 "energy_mean","energy_std","correlation_mean","correlation_std"]
 P = 24
@@ -53,40 +45,6 @@ MORPH_NAMES = ["area_foreground","area_contour","circularity"]
 EDGE_NAMES  = ["sobel_mean","sobel_std","edge_density"]
 GAMETE_NAMES= ["total_tissue_pixels","gamete_pixels","area_fraction"]
 ALL_FEATURE_NAMES = GLCM_NAMES + LBP_NAMES + CM_NAMES + MORPH_NAMES + EDGE_NAMES + GAMETE_NAMES
-
-
-# def preprocess_image(img: np.ndarray) -> np.ndarray:
-#     # 1. Illumination correction via LAB
-#     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-#     L, A, B = cv2.split(lab)
-#     L_blur = cv2.GaussianBlur(L, (99, 99), 0)
-#     cv2.divide(lab[:, :, 0], L_blur, scale=255)   # side-effect correction
-#     img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
-
-#     img = cv2.bilateralFilter(img, 7, 40, 40)
-
-#     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-#     L, A, B = cv2.split(lab)
-#     clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
-#     L = clahe.apply(L)
-#     img = cv2.cvtColor(cv2.merge([L, A, B]), cv2.COLOR_LAB2BGR)
-
-#     lab2 = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-#     _, A2, _ = cv2.split(lab2)
-#     A_blur = cv2.GaussianBlur(A2, (9, 9), 0)
-#     _, mask = cv2.threshold(A_blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-#     kernel = np.ones((7, 7), np.uint8)
-#     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN,  kernel, iterations=2)
-#     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=3)
-
-#     coords = cv2.findNonZero(mask)
-#     if coords is not None and np.sum(mask) >= 5000:
-#         x, y, w, h = cv2.boundingRect(coords)
-#         img = img[y:y+h, x:x+w]
-
-#     img = cv2.resize(img, (256, 256))
-#     return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 def extract_glcm(img_gray: np.ndarray) -> np.ndarray:
     glcm = graycomatrix(
@@ -167,9 +125,8 @@ def extract_gamete_area(img_gray: np.ndarray, img_bgr: np.ndarray, sex: str) -> 
 
 
 def build_feature_vector(img_bgr: np.ndarray, sex: str) -> np.ndarray:
-    img_rgb  = preprocess_image(img_bgr)           # normalised RGB 256×256
-    img_proc = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)  # back to BGR for CV ops
-    gray     = cv2.cvtColor(img_proc, cv2.COLOR_BGR2GRAY)
+    img_proc = img_bgr
+    gray = cv2.cvtColor(img_proc, cv2.COLOR_BGR2GRAY)
 
     glcm   = extract_glcm(gray)
     lbp    = extract_lbp(gray)
@@ -193,20 +150,29 @@ class PredictionResponse(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model_loaded": MODEL is not None}
-
+    return {
+        "status": "ok",
+        "model_F_loaded": MODEL_F is not None,
+        "model_M_loaded": MODEL_M is not None
+    }
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(
     file: UploadFile = File(...),
     sex: str = Form(...),   # "M" or "F"
 ):
-    if MODEL is None:
-        raise HTTPException(status_code=503, detail="Model not loaded. Place xgb_model.pkl in the backend directory.")
-
     sex = sex.upper()
-    if sex not in ("M", "F"):
-        raise HTTPException(status_code=400, detail="sex must be 'M' or 'F'")
+    if sex in ["MALE", "M"]:
+        sex = "M"
+    elif sex in ["FEMALE", "F"]:
+        sex = "F"
+    else:
+        raise HTTPException(...)
+    
+    MODEL = MODEL_M if sex == "M" else MODEL_F
+
+    if MODEL is None:
+        raise HTTPException(status_code=503, detail="Model not loaded.")
 
     # Read image
     contents = await file.read()
@@ -215,9 +181,21 @@ async def predict(
     if img_bgr is None:
         raise HTTPException(status_code=400, detail="Could not decode image. Send a valid JPG/PNG.")
 
+    # Select reference image
+    if sex == "M":
+        ref_path = "reference_images/M_reference.jpg"
+    else:
+        ref_path = "reference_images/F_reference.jpg"
+
+    # Apply Reinhard normalization
+    img_norm = reinhard_normalization(img_bgr, ref_path)
+
+    # Resize (IMPORTANT)
+    #img_norm = cv2.resize(img_norm, (256, 256))
+
     # Feature extraction
     try:
-        fv = build_feature_vector(img_bgr, sex)
+        fv = build_feature_vector(img_norm, sex)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Feature extraction failed: {e}")
 

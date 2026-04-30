@@ -22,7 +22,7 @@ def reinhard_normalization(input_bgr, reference_path):
     ref_std = ref_std.reshape(1, 1, 3)
 
     input_mean, input_std = get_mean_and_std(input_lab)
-
+    input_std = np.where(input_std == 0, 1, input_std)
     # Apply Reinhard normalization
     normalized = (input_lab - input_mean) * (ref_std / input_std) + ref_mean
     normalized = np.clip(normalized, 0, 255).astype(np.uint8)

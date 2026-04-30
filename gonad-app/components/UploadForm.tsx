@@ -6,10 +6,13 @@ export default function UploadForm() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [sex, setSex] = useState("male");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
 
   const handleFile = (selectedFile: File) => {
     setFile(selectedFile);
     setPreview(URL.createObjectURL(selectedFile));
+    setResult(null);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -25,85 +28,115 @@ export default function UploadForm() {
       return;
     }
 
+    setLoading(true);
+
     const formData = new FormData();
-    formData.append("image", file);
+    formData.append("file", file);
     formData.append("sex", sex);
 
-    const res = await fetch("/api/predict", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await res.json();
-    console.log(data);
+    try {
+      const res = await fetch("/api/predict", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      setResult(data);
+    } catch (err) {
+      console.error(err);
+      alert("Error processing image");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 border rounded-xl shadow">
-      <h2 className="text-xl font-bold mb-4">
-        Gonadal Stage Classifier
-      </h2>
+    <div className="max-w-lg mx-auto p-6 bg-white shadow-xl rounded-2xl"> <h2 className="text-2xl font-bold text-center mb-6"> GonaX - Blood Cockle Classifier </h2>
 
-      {/* Drag & Drop Area */}
+      {/* Upload Area */}
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
-        className="border-2 border-dashed p-6 text-center rounded-lg cursor-pointer"
+        onClick={() => document.getElementById("fileInput")?.click()}
+        className="border-2 border-dashed border-blue-400 p-8 text-center rounded-xl cursor-pointer hover:bg-blue-50 transition"
       >
-        <p>Drag & drop an image here</p>
-        <p className="text-sm text-gray-500">or click below</p>
+        <p className="text-gray-700 font-medium">
+          Drag & drop an image here
+        </p>
+        <p className="text-sm text-gray-500 mt-1">
+          or click to upload
+        </p>
 
         <input
+          id="fileInput"
           type="file"
           accept="image/*"
-          className="mt-3"
+          className="hidden"
           onChange={(e) =>
             e.target.files && handleFile(e.target.files[0])
           }
         />
       </div>
-
       {/* Preview */}
       {preview && (
         <img
           src={preview}
           alt="preview"
-          className="mt-4 rounded-lg"
+          className="mt-4 rounded-xl shadow"
         />
       )}
 
-      {/* Radio Buttons */}
+      {/* Sex Selection */}
       <div className="mt-4">
         <p className="font-semibold mb-2">Select Sex:</p>
 
-        <label className="mr-4">
-          <input
-            type="radio"
-            value="male"
-            checked={sex === "male"}
-            onChange={(e) => setSex(e.target.value)}
-          />{" "}
-          Male
-        </label>
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              value="male"
+              checked={sex === "male"}
+              onChange={(e) => setSex(e.target.value)}
+            />
+            Male
+          </label>
 
-        <label>
-          <input
-            type="radio"
-            value="female"
-            checked={sex === "female"}
-            onChange={(e) => setSex(e.target.value)}
-          />{" "}
-          Female
-        </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              value="female"
+              checked={sex === "female"}
+              onChange={(e) => setSex(e.target.value)}
+            />
+            Female
+          </label>
+        </div>
       </div>
 
-      {/* Submit Button */}
+      {/* Button */}
       <button
         onClick={handleSubmit}
-        className="mt-6 w-full bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700"
+        disabled={loading}
+        className="mt-6 w-full bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 transition disabled:opacity-50"
       >
-        Submit
+        {loading ? "Processing..." : "Analyze"}
       </button>
+
+      {/* RESULT DISPLAY */}
+      {result && (
+        <div className="mt-6 p-4 border rounded-xl bg-gray-50">
+          <h3 className="font-bold text-lg mb-2">Result</h3>
+
+          <p>
+            <span className="font-semibold">Stage:</span>{" "}
+            {result.predicted_stage}
+          </p>
+
+          <p>
+            <span className="font-semibold">Confidence:</span>{" "}
+            {(result.confidence * 100).toFixed(2)}%
+          </p>
+        </div>
+      )}
     </div>
-  );
+);
 }
