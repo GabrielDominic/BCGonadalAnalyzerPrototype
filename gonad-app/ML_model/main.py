@@ -22,8 +22,8 @@ app.add_middleware(
 )
 
 # ── Model loading 
-MODEL_F = pickle.load(open("best_xgb_model_F.pkl", "rb"))
-MODEL_M = pickle.load(open("best_xgb_model_M.pkl", "rb"))
+MODEL_F = pickle.load(open("best_xgb_model_F.pickle", "rb"))
+#MODEL_M = pickle.load(open("best_xgb_model_M.pickle", "rb"))
 
 # try:
 #     with open(MODEL_PATH, "rb") as f:
