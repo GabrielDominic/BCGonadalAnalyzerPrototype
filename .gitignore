@@ -8,8 +8,10 @@ reference_images/
 Scripts/
 .vscode/
 __pycache__/
-tf_env/
+
 .venv-1/
+
+gonad-app/backend/venv/
 
 normalized_updated_dataset/
 *.png

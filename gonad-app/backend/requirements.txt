@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+numpy
+opencv-python
+scikit-image
+pydantic
+xgboost
+imbalanced-learn
+pillow
+pandas
+scipy
+python-multipart

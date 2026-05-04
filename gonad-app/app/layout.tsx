@@ -1,4 +1,10 @@
 // import "./globals.css";
+import "./globals.css";
+
+export const metadata = {
+  title: 'GonaX', // Change this text
+  description: 'GonaX - Blood Cockle Classifier.',
+};
 
 export default function RootLayout({
   children,
