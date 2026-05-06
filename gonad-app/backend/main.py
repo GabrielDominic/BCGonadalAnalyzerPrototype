@@ -12,6 +12,11 @@ from utils.normalization import reinhard_normalization
 # ── App setup 
 app = FastAPI(title="BC Gonadal Stage Analyzer API", version="1.0.0")
 
+origins = [
+    "http://localhost:3000",
+    "https://your-app-name.vercel.app", 
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],   # adjust for production

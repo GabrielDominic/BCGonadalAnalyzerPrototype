@@ -172,7 +172,12 @@ export default function UploadForm() {
             disabled={loading || !file}
             className="mt-8 w-full bg-blue-600 text-white p-4 rounded-2xl font-bold text-lg hover:bg-blue-700 transition disabled:opacity-50 shadow-xl shadow-blue-100"
           >
-            {loading ? "Processing XGBoost..." : "Analyze Specimen"}
+            {loading ? (
+              <div className="flex items-center justify-center space-x-4">
+                  <p>Processing Specimen...</p>
+                  <div className="w-12 h-12 border-4 border-blue-500 rounded-full animate-spin border-t-transparent"></div>
+              </div>
+            ) : ("Analyze Specimen")}
           </button>
             {result && (
               <div className="mt-8 p-6 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-xl">
