@@ -8,6 +8,7 @@ from typing import List, Dict
 from skimage.feature.texture import graycomatrix, graycoprops
 from skimage.feature import local_binary_pattern
 from utils.normalization import reinhard_normalization
+import joblib
 
 # ── App setup 
 app = FastAPI(title="BC Gonadal Stage Analyzer API", version="1.0.0")
@@ -25,9 +26,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Model loading 
+# Model loading 
 MODEL_F = pickle.load(open("best_xgb_model_F.pickle", "rb"))
 MODEL_M = pickle.load(open("best_xgb_model_M.pickle", "rb"))
+
+#Loading Bouncer Model
+BOUNCER_M = joblib.load("histology_bouncer_male.joblib")
+BOUNCER_F = joblib.load("histology_bouncer_female.joblib")
 
 # try:
 #     with open(MODEL_PATH, "rb") as f:
@@ -164,7 +169,7 @@ def health():
 async def predict(
     file: UploadFile = File(...),
     sex: str = Form(...),   # "M" or "F"
-):
+    ):
     sex = sex.upper()
     if sex in ["MALE", "M"]:
         sex = "M"
@@ -197,14 +202,32 @@ async def predict(
     # Resize (IMPORTANT)
     #img_norm = cv2.resize(img_norm, (256, 256))
 
+    #Bouncer Check for Anomaly Detection
+    if sex.upper() in ["M", "MALE"]:
+        CURRENT_BOUNCER = BOUNCER_M
+        CURRENT_MODEL = MODEL_M
+    else:
+        CURRENT_BOUNCER = BOUNCER_F
+        CURRENT_MODEL = MODEL_F
+
     # Feature extraction
     try:
         fv = build_feature_vector(img_norm, sex)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Feature extraction failed: {e}")
-
-    # Prediction
+    
     fv_2d = fv.reshape(1, -1)
+    # Check Anomalies with Bouncer
+    anomaly_score = CURRENT_BOUNCER.decision_function(fv_2d)[0]
+    print(f"Anomaly Score: {anomaly_score:.4f}")
+    
+    # if CURRENT_BOUNCER.predict(fv_2d)[0] == -1:
+    #     raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")
+    
+    if anomaly_score < 0.04:
+        raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")
+    
+    # Prediction
     pred_idx   = int(MODEL.predict(fv_2d)[0])
     proba      = MODEL.predict_proba(fv_2d)[0]
 

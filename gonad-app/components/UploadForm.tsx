@@ -9,6 +9,7 @@ export default function UploadForm() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [isFullscreen, setisFullscreen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect (() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -47,8 +48,10 @@ export default function UploadForm() {
       alert("Please upload an image");
       return;
     }
-
+    
     setLoading(true);
+    setError(null);
+    setResult(null);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -60,6 +63,14 @@ export default function UploadForm() {
         body: formData,
       });
       const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.detail || "Error processing image");
+        // alert(data.detail || "An error occurred while processing the image.");
+        setLoading(false);
+        return;
+      }
+
       setResult(data);
     } catch (err) {
       console.error(err);
@@ -79,7 +90,7 @@ export default function UploadForm() {
     <div className="w-3/4 lg:w-2/3 mx-auto p-8shadow-2xl rounded-3xl">
       {isFullscreen && preview && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in duration-300 cursor-zoom-out
-        onclick={() => setisFullscreen(false)}
+        onClick={() => setisFullscreen(false)}
       ">
         <button className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors"
             onClick={() => setisFullscreen(false)} >
@@ -125,7 +136,7 @@ export default function UploadForm() {
               Selected: <span className={sex === 'male' ? 'text-blue-600' : 'text-pink-600'}>{sex}</span>
             </p>
             <button 
-              onClick={() => {setSex(null); setFile(null); setPreview(null); setResult(null);}}
+              onClick={() => {setSex(null); clearImage(); setError(null);}}
               className="font-bold text-s text-blue-500 bg-blue-600 hover:bg-blue-800 rounded-2xl px-3 py-1 text-white transition opacity-80 hover:opacity-70 shadow-xl shadow-blue-100"
             >
               Change Sex
@@ -158,7 +169,7 @@ export default function UploadForm() {
               <p className="text-xs font-bold text-gray-400 mb-2 uppercase">Image Preview:</p>
               <img src={preview} alt="preview" className="rounded-2xl shadow-lg border-4 border-white w-full h-100 object-cover" />
               <button 
-              onClick={clearImage}
+              onClick={(e) => {e.stopPropagation(); clearImage(); setError(null); }}
               className="absolute top-8 right-4 bg-white/90 backdrop-blur-sm text-red-500 font-bold text-xs px-4 py-2 rounded-full shadow-md hover:bg-red-500 hover:text-white transition-all"
               >
                 Remove Image
@@ -166,7 +177,19 @@ export default function UploadForm() {
             </div>
           </div>
           )}
-
+          {/* BOUNCER ALERT */}
+          {error && (
+            <div className="mt-6 p-4 bg-red-50 border-1-4 border-red-500 rounded-2xl shadow-md animate-in fade-in duration-500">
+              <div className="flex items-center gap-3">
+                  <span className="text-red-500 text-xl font-bold">⚠️</span>
+                  <div>
+                    <p className="text-red-800 font-bold text-sm uppercase tracking-tight">Anomaly Detected</p>
+                    <p className="text-red-700 text-sm">{error}</p>
+                  </div>
+              </div>
+            </div>
+          )}
+          {/* Analyze */}
           <button
             onClick={handleSubmit}
             disabled={loading || !file}
@@ -175,7 +198,7 @@ export default function UploadForm() {
             {loading ? (
               <div className="flex items-center justify-center space-x-4">
                   <p>Processing Specimen...</p>
-                  <div className="w-12 h-12 border-4 border-blue-500 rounded-full animate-spin border-t-transparent"></div>
+                  <div className="w-6 h-6 border-4 border-blue-500 rounded-full animate-spin border-t-transparent"></div>
               </div>
             ) : ("Analyze Specimen")}
           </button>
@@ -192,6 +215,33 @@ export default function UploadForm() {
                     <p className="text-2xl font-black">{(result.confidence * 100).toFixed(2)}%</p>
                   </div>
                 </div>
+                  <div className="mt-6 pt-6 border-t border-white/20">
+                    <p className="text-xs opacity-70 mb-3 uppercase tracking-widest font-bold">
+                      Stage Probability Breakdown:
+                    </p>
+                    <div className="space-y-3">
+                      {Object.entries(result.probabilities).map(([stage, score]) => (
+                        <div key={stage} className="group">
+                          <div className="flex justify-between text-sm mb-1 capitalize">
+                            <span className={stage === result.predicted_stage ? "font-bold" : "opacity-80"}>
+                              {stage}
+                            </span>
+                            <span className="font-mono">{(Number(score) * 100).toFixed(1)}%</span>
+                          </div>
+                          {/* Progress Bar Background */}
+                          <div className="w-full bg-white/20 h-1.5 rounded-full overflow-hidden">
+                            {/* Progress Bar Fill */}
+                            <div 
+                              className={`h-full transition-all duration-1000 ease-out ${
+                                stage === result.predicted_stage ? "bg-white" : "bg-white/40"
+                              }`}
+                              style={{ width: `${Number(score) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
               </div>
             )}
           <br></br>
