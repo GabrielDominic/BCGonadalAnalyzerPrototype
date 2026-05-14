@@ -11,7 +11,7 @@ import pickle
 import time
 
 def preprocess_image_segmented(img):
-    # img = cv2.resize(img, (512, 512))
+    img = cv2.resize(img, (1024, 1024))
 
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     L, A, B = cv2.split(lab)
@@ -57,8 +57,8 @@ def preprocess_image_segmented(img):
     return img_crop
 
 def preprocess_image_clean(img):
-    img = cv2.resize(img, (256, 256))
-    return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = cv2.resize(img, (1024, 1024))
+    return img
 
 def extract_edge_features(img_gray):
     # Sobel
@@ -181,7 +181,7 @@ def extract_gamete_area(img_gray, image, folder_name):
 ## #Data Preparation
 # dir = 'C:\\GitProjects\\BCGonadalAnalyzerPrototype\\output_images\\M'
 # dir = 'D:\\SP\\BCDataset15-4-2026\\M'
-dir = 'C:\\GitProjects\\BCGonadalAnalyzerPrototype\\normalized_updated_dataset\\M'
+dir = 'C:\\GitProjects\\BCGonadalAnalyzerPrototype\\normalized_updated_dataset\\F'
 categories = ['developing','maturing','spawning','spent']
 
 folder_name = os.path.basename(dir)
@@ -213,7 +213,7 @@ for category in categories:
                 print(f'Image not found or unreadable: {img_path}')
         
             #Preprocessing
-            # clean_img = preprocess_image_clean(img)
+            img = preprocess_image_clean(img)
             # images_original.append(clean_img)
             # seg_img = preprocess_image_segmented(img)
             # images_segmented.append((seg_img, img_path))
@@ -279,7 +279,7 @@ print(f'Average Edge extraction time: {np.mean(edge_times):.2f} seconds')
 print(f'Average Gamete Area extraction time: {np.mean(gamete_times):.2f} seconds')
 
 # Saving Data
-pick_in = open('CTGAFmaleupdatedFeatures.pickle', 'wb')
+pick_in = open('FemaleFeatures[Balanced].pickle', 'wb')
 pickle.dump(data, pick_in)
 pick_in.close()
 

@@ -1,9 +1,5 @@
 imagedataset/
 output_images/
-reference_images/
-*.png
-*.jpg
-*.jpeg
 .venv/
 Scripts/
 .vscode/

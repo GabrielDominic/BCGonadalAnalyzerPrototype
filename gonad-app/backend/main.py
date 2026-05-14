@@ -33,6 +33,7 @@ MODEL_M = pickle.load(open("best_xgb_model_M.pickle", "rb"))
 #Loading Bouncer Model
 BOUNCER_M = joblib.load("histology_bouncer_male.joblib")
 BOUNCER_F = joblib.load("histology_bouncer_female.joblib")
+# BOUNCER_F = joblib.load("histology_bouncer_female[Balanced].joblib")
 
 # try:
 #     with open(MODEL_PATH, "rb") as f:
@@ -42,7 +43,7 @@ BOUNCER_F = joblib.load("histology_bouncer_female.joblib")
 #     print(f"[WARN] Model file '{MODEL_PATH}' not found. /predict will fail until model is present.")
 #     MODEL = None
 
-MALE_CATEGORIES   = ["developing", "maturing", "spawning", "spent"]
+MALE_CATEGORIES   = ["developing", "mature", "spawning", "spent"]
 FEMALE_CATEGORIES = ["developing", "mature",   "spawning", "spent"]
 
 GLCM_NAMES  = ["contrast_mean","contrast_std","homogeneity_mean","homogeneity_std",
@@ -224,8 +225,8 @@ async def predict(
     # if CURRENT_BOUNCER.predict(fv_2d)[0] == -1:
     #     raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")
     
-    if anomaly_score < 0.04:
-        raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")
+    # if anomaly_score < 0.065:
+    #     raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")
     
     # Prediction
     pred_idx   = int(MODEL.predict(fv_2d)[0])
