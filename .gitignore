@@ -10,8 +10,4 @@ __pycache__/
 gonad-app/backend/venv/
 
 normalized_updated_dataset/
-*.png
-*.jpg
-*.jpeg
-
 
