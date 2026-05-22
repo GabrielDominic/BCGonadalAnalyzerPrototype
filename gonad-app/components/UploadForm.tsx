@@ -64,6 +64,10 @@ export default function UploadForm() {
         method: "POST",
         body: formData,
       });
+      const contentType = res.headers.get("content-Type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Server returned a non-JSON response. Is the API route correct?");
+      }
       const data = await res.json();
 
       if (!res.ok) {
@@ -74,9 +78,9 @@ export default function UploadForm() {
       }
 
       setResult(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error processing image");
+      setError( err.message || "An error occurred while processing the image. Please try again.");
     } finally {
       setLoading(false);
     }

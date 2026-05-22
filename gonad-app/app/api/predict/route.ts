@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     });
   
     if(!res.ok) {
-      const errorText = await res.text();
+      const errorText = await res.json();
       console.error("Python Server Error:", errorText);
       return NextResponse.json({ error: "Error processing image" }, { status: res.status  }        
       );
