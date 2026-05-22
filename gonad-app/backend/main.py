@@ -1,4 +1,8 @@
 import pickle
+import torch
+from torchvision import models, transforms
+from PIL import Image
+import torch.nn as nn
 import numpy as np
 import cv2
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
@@ -9,6 +13,7 @@ from skimage.feature.texture import graycomatrix, graycoprops
 from skimage.feature import local_binary_pattern
 from utils.normalization import reinhard_normalization
 import joblib
+import os
 
 # ── App setup 
 app = FastAPI(title="BC Gonadal Stage Analyzer API", version="1.0.0")
@@ -26,17 +31,85 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Model loading 
-MODEL_F = pickle.load(open("best_xgb_model_F(Balanced).pickle", "rb"))
-# MODEL_F = pickle.load(open("best_gradient_boosting_model_F(Balanced).pickle", "rb"))
-MODEL_M = pickle.load(open("best_xgb_model_M.pickle", "rb"))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-#Loading Bouncer Model
-BOUNCER_M = joblib.load("histology_bouncer_male.joblib")
-BOUNCER_F = joblib.load("histology_bouncer_female.joblib")
+def get_path(relative_path: str):
+    return os.path.join(BASE_DIR, relative_path)
 
-MALE_CATEGORIES   = ["developing", "mature", "spawning", "spent"]
-FEMALE_CATEGORIES = ["developing", "mature", "spawning", "spent"]
+device = torch.device("cpu")
+
+# ── Model loading 
+try:
+    #ML Models
+    # MODEL_F = pickle.load(open("best_xgb_model_F.pickle", "rb"))
+    MODEL_F = pickle.load(open("best_gb_model_F(Balanced).pickle", "rb"))
+    # MODEL_F = pickle.load(open("best_svc_model_F.pickle", "rb"))
+    MODEL_M = pickle.load(open("best_xgb_model_M.pickle", "rb"))
+    
+    #Bouncer Models
+    BOUNCER_M = joblib.load("histology_bouncer_male.joblib")
+    BOUNCER_F = joblib.load("histology_bouncer_female[Balanced].joblib")
+    print("ML Models and Bouncers loaded successfully.")
+except Exception as e:
+    print(f"[ERROR] Failed to load ML models: {e}")
+    MODEL_F = MODEL_M = BOUNCER_F = BOUNCER_M = None
+
+try:
+    #DL Models
+    #MALE MODEL: EfficientNet-B0
+    DL_MODEL_M = models.efficientnet_b0(weights=None)
+    in_features = DL_MODEL_M.classifier[1].in_features
+    DL_MODEL_M.classifier = nn.Sequential(
+        nn.Dropout(p=0.3),
+        nn.Linear(in_features, 256),
+        nn.ReLU(),
+        nn.Dropout(p=0.2),
+        nn.Linear(256, 4)
+    )
+    m_path = get_path("dlmodels/male_best_model_efficientnet_b0.pth")
+    DL_MODEL_M.load_state_dict(torch.load(m_path, map_location='cpu'))
+    DL_MODEL_M.eval()
+
+    #FEMALE MODEL: ResNet-50
+    DL_MODEL_F = models.resnet50(weights=None)
+    num_features = DL_MODEL_F.fc.in_features
+    DL_MODEL_F.fc = nn.Sequential(
+        nn.Dropout(p=0.3),
+        nn.Linear(num_features, 256),
+        nn.ReLU(),
+        nn.Dropout(p=0.2),
+        nn.Linear(256, 4)
+    )
+    f_path = get_path("dlmodels/female_best_model_resnet50.pth")
+    #loading Weights
+    DL_MODEL_F.load_state_dict(torch.load(f_path, map_location='cpu'))
+    DL_MODEL_F.eval()
+    print("DL Models loaded successfully.")
+except Exception as e:
+    print(f"[ERROR] Failed to load DL models: {e}")
+    DL_MODEL_M = DL_MODEL_F = None
+
+#Transform Pipelines for DL Models
+transform = transforms.Compose([
+    transforms.ToPILImage(),
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(
+        mean=[0.485, 0.456, 0.406], 
+        std=[0.229, 0.224, 0.225]
+    )
+])
+
+# try:
+#     with open(MODEL_PATH, "rb") as f:
+#         MODEL = pickle.load(f)
+#     print(f"[OK] Model loaded from {MODEL_PATH}")
+# except FileNotFoundError:
+#     print(f"[WARN] Model file '{MODEL_PATH}' not found. /predict will fail until model is present.")
+#     MODEL = None
+
+MALE_CATEGORIES   = ["developing", "maturing", "spawning", "spent"]
+FEMALE_CATEGORIES = ["developing", "maturing", "spawning", "spent"]
 
 GLCM_NAMES  = ["contrast_mean","contrast_std","homogeneity_mean","homogeneity_std",
                 "energy_mean","energy_std","correlation_mean","correlation_std"]
@@ -47,6 +120,21 @@ MORPH_NAMES = ["area_foreground","area_contour","circularity"]
 EDGE_NAMES  = ["sobel_mean","sobel_std","edge_density"]
 GAMETE_NAMES= ["total_tissue_pixels","gamete_pixels","area_fraction"]
 ALL_FEATURE_NAMES = GLCM_NAMES + LBP_NAMES + CM_NAMES + MORPH_NAMES + EDGE_NAMES + GAMETE_NAMES
+
+def predict_dl(img_bgr, sex):
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    img_tensor = transform(img_rgb).unsqueeze(0)  # Add batch dimension
+    with torch.no_grad():
+        if sex == "M":
+            outputs = DL_MODEL_M(img_tensor)
+        if sex == "F":
+            outputs = DL_MODEL_F(img_tensor)
+        
+        probabilities = torch.softmax(outputs, dim=1).cpu()
+        predicted_idx = torch.argmax(probabilities, dim=1).item()
+        confidence = probabilities[0, predicted_idx].item()
+    
+    return predicted_idx, confidence, probabilities[0].cpu().numpy()
 
 def extract_glcm(img_gray: np.ndarray) -> np.ndarray:
     glcm = graycomatrix(
@@ -162,6 +250,7 @@ def health():
 async def predict(
     file: UploadFile = File(...),
     sex: str = Form(...),   # "M" or "F"
+    model_choice: str = Form("ML")  # "ML" or "DL"
     ):
     sex = sex.upper()
     if sex in ["MALE", "M"]:
@@ -171,11 +260,6 @@ async def predict(
     else:
         raise HTTPException(...)
     
-    MODEL = MODEL_M if sex == "M" else MODEL_F
-
-    if MODEL is None:
-        raise HTTPException(status_code=503, detail="Model not loaded.")
-
     # Read image
     contents = await file.read()
     nparr    = np.frombuffer(contents, np.uint8)
@@ -191,60 +275,80 @@ async def predict(
 
     # Apply Reinhard normalization
     img_norm = reinhard_normalization(img_bgr, ref_path)
-
-    #Bouncer Check for Anomaly Detection
-    if sex.upper() in ["M", "MALE"]:
-        CURRENT_BOUNCER = BOUNCER_M
-        CURRENT_MODEL = MODEL_M
-    else:
-        CURRENT_BOUNCER = BOUNCER_F
-        CURRENT_MODEL = MODEL_F
-
-    # Feature extraction
-    try:
-        fv = build_feature_vector(img_norm, sex)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Feature extraction failed: {e}")
-    
-    fv_2d = fv.reshape(1, -1)
-    # Check Anomalies with Bouncer
-    anomaly_score = CURRENT_BOUNCER.decision_function(fv_2d)[0]
-    print(f"Anomaly Score: {anomaly_score:.4f}")
-    
-    # if CURRENT_BOUNCER.predict(fv_2d)[0] == -1:
-    #     raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")
-    # if CURRENT_BOUNCER == BOUNCER_M and anomaly_score < 0.065:
-        # raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")
-    # if CURRENT_BOUNCER == BOUNCER_F and anomaly_score < 0.05:
-    #     pass   
-    # if anomaly_score < 0.065:
-    
-    # Prediction
-    pred_idx   = int(MODEL.predict(fv_2d)[0])
-    proba      = MODEL.predict_proba(fv_2d)[0]
-
     categories = MALE_CATEGORIES if sex == "M" else FEMALE_CATEGORIES
-    predicted_stage = categories[pred_idx]
-    confidence      = float(proba[pred_idx])
-    probabilities   = {cat: float(p) for cat, p in zip(categories, proba)}
 
-    # Build feature groups for the frontend
-    fv_list = fv.tolist()
-    idx = 0
-    groups: List[FeatureGroup] = []
+    #DL Path
+    if model_choice.upper() == "DL":
+        if DL_MODEL_M is None or DL_MODEL_F is None:
+            raise HTTPException(status_code=503, detail="DL Models not loaded.")
 
-    def take(names):
-        nonlocal idx
-        d = {n: round(fv_list[idx + i], 6) for i, n in enumerate(names)}
-        idx += len(names)
-        return d
+        pred_idx, confidence, proba = predict_dl(img_norm, sex)
+        predicted_stage = categories[pred_idx]
+        probabilities = {cat: float(p) for cat, p in zip(categories, proba)} 
+        groups = []  
+    
+    else:
 
-    groups.append(FeatureGroup(name="GLCM (Texture)",      features=take(GLCM_NAMES)))
-    groups.append(FeatureGroup(name="LBP (Local Pattern)", features=take(LBP_NAMES)))
-    groups.append(FeatureGroup(name="Color Moments",       features=take(CM_NAMES)))
-    groups.append(FeatureGroup(name="Morphology",          features=take(MORPH_NAMES)))
-    groups.append(FeatureGroup(name="Edge (Sobel/Canny)",  features=take(EDGE_NAMES)))
-    groups.append(FeatureGroup(name="Gamete Area",         features=take(GAMETE_NAMES)))
+        #ML Path
+        MODEL = MODEL_M if sex == "M" else MODEL_F
+
+        if MODEL is None:
+            raise HTTPException(status_code=503, detail="Model not loaded.")
+
+        #Bouncer Check for Anomaly Detection
+        if sex.upper() in ["M", "MALE"]:
+            CURRENT_BOUNCER = BOUNCER_M
+            CURRENT_MODEL = MODEL_M
+        else:
+            CURRENT_BOUNCER = BOUNCER_F
+            CURRENT_MODEL = MODEL_F
+
+        # Feature extraction
+        try:
+            fv = build_feature_vector(img_norm, sex)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Feature extraction failed: {e}")
+
+        #ML Prediction
+        fv_2d = fv.reshape(1, -1)
+        # Check Anomalies with Bouncer
+        anomaly_score = CURRENT_BOUNCER.decision_function(fv_2d)[0]
+        print(f"Anomaly Score: {anomaly_score:.4f}")
+        
+        # if CURRENT_BOUNCER.predict(fv_2d)[0] == -1:
+        #     raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")
+        # if CURRENT_BOUNCER == BOUNCER_M and anomaly_score < 0.065:
+            # raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")
+        if CURRENT_BOUNCER == BOUNCER_F and anomaly_score < 0.05:
+            pass   
+        # if anomaly_score < 0.065:
+        
+        # Prediction
+        pred_idx   = int(MODEL.predict(fv_2d)[0])
+        proba      = MODEL.predict_proba(fv_2d)[0]
+
+        categories = MALE_CATEGORIES if sex == "M" else FEMALE_CATEGORIES
+        predicted_stage = categories[pred_idx]
+        confidence      = float(proba[pred_idx])
+        probabilities   = {cat: float(p) for cat, p in zip(categories, proba)}
+
+        # Build feature groups for the frontend
+        fv_list = fv.tolist()
+        idx = 0
+        groups: List[FeatureGroup] = []
+
+        def take(names):
+            nonlocal idx
+            d = {n: round(fv_list[idx + i], 6) for i, n in enumerate(names)}
+            idx += len(names)
+            return d
+
+        groups.append(FeatureGroup(name="GLCM (Texture)",      features=take(GLCM_NAMES)))
+        groups.append(FeatureGroup(name="LBP (Local Pattern)", features=take(LBP_NAMES)))
+        groups.append(FeatureGroup(name="Color Moments",       features=take(CM_NAMES)))
+        groups.append(FeatureGroup(name="Morphology",          features=take(MORPH_NAMES)))
+        groups.append(FeatureGroup(name="Edge (Sobel/Canny)",  features=take(EDGE_NAMES)))
+        groups.append(FeatureGroup(name="Gamete Area",         features=take(GAMETE_NAMES)))
 
     return PredictionResponse(
         predicted_stage=predicted_stage,

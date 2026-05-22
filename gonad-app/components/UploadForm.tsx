@@ -10,6 +10,7 @@ export default function UploadForm() {
   const [result, setResult] = useState<any>(null);
   const [isFullscreen, setisFullscreen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modelChoice, setModelChoice] = useState<"ml" | "dl">("ml");
 
   useEffect (() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -56,6 +57,7 @@ export default function UploadForm() {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("sex", sex);
+    formData.append("model_choice", modelChoice);
 
     try {
       const res = await fetch("/api/predict", {
@@ -189,6 +191,31 @@ export default function UploadForm() {
               </div>
             </div>
           )}
+          <div className="mb-6 animate-in fade-in duration-500">
+            <p className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-widest">Select Classifier Engine:</p>
+            <div className="flex p-1 bg-gray-100 rounded-2xl border border-gray-200">
+              <button
+                onClick={() => setModelChoice("ml")}
+                className={`flex-1 py-2 px-4 rounded-xl text-sm font-bold transition-all ${
+                  modelChoice === "ml" 
+                  ? "bg-white text-blue-600 shadow-sm" 
+                  : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {sex === "male" ? "ML (XGBOOST)" : "ML (GRADIENT BOOSTING)"}
+              </button>
+              <button
+                onClick={() => setModelChoice("dl")}
+                className={`flex-1 py-2 px-4 rounded-xl text-sm font-bold transition-all ${
+                  modelChoice === "dl"
+                  ? "bg-white text-blue-600 shadow-sm" 
+                  : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {sex === "male" ? "DL (EFFNET-B0)" : "DL (RESNET-50)"}
+              </button>
+            </div>
+          </div>
           {/* Analyze */}
           <button
             onClick={handleSubmit}

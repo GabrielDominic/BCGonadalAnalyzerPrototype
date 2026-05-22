@@ -247,7 +247,15 @@ test_evaluate("XGBoost", best_xgb_model)
 with open('best_xgb_model_F(Balanced).pickle', 'wb') as f:
     pickle.dump(best_xgb_model, f)
 
-print("XGBoost model saved to best_xgb_model_M.pickle")
+print("XGBoost model saved to best_xgb_model_F.pickle")
+
+with open('best_gb_model_F.pickle(Balanced)', 'wb') as f:
+    pickle.dump(best_gb_model, f)
+print("Gradient Boosting model saved to best_gb_model_F.pickle")
+
+with open('best_svc_model_F.pickle(Balanced)', 'wb') as f:
+    pickle.dump(best_svc_model, f)
+print("SVC model saved to best_svc_model_F.pickle")
 
 with open('best_gradient_boosting_model_F(Balanced).pickle', 'wb') as f:
     pickle.dump(best_gb_model, f)
