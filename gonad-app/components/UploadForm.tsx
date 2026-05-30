@@ -142,9 +142,9 @@ export default function UploadForm() {
   return (
     <div className="w-3/4 lg:w-2/3 mx-auto p-8shadow-2xl rounded-3xl">
       {isFullscreen && preview && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in duration-300 cursor-zoom-out
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in duration-300 cursor-zoom-out"
         onClick={() => setisFullscreen(false)}
-      ">
+      >
         <button className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors"
             onClick={() => setisFullscreen(false)} >
           <p className="text-2xl">X</p>
