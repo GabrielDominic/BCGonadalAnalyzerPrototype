@@ -41,7 +41,8 @@ device = torch.device("cpu")
 # ── Model loading 
 try:
     #ML Models
-    MODEL_F = pickle.load(open("best_xgb_model_F.pickle", "rb"))
+    xgb_f_path = get_path("mlmodels/best_xgb_model_F.pickle")
+    MODEL_F = pickle.load(open(xgb_f_path, "rb"))
     # MODEL_F = pickle.load(open("best_gb_model_F.pickle", "rb"))
     # MODEL_F = pickle.load(open("best_svc_model_F.pickle", "rb"))
     # MODEL_M = pickle.load(open("best_xgb_model_M.pickle", "rb"))
