@@ -92,6 +92,50 @@ export default function UploadForm() {
     setResult(null);
   };
 
+  const getModelDescription = () => {
+    if (modelChoice === "ml") {
+      if (sex === "male") {
+        return(
+          <>
+          <span className="font-bold text-blue-800">Best for:</span> Detecting
+          <span className="font-semibold text-blue-700"> Mature</span> and 
+          <span className="font-semibold text-blue-700"> Spent</span> stages.
+          <br />Better at detecting <span className="font-bold text-blue-800">Developing stage</span> compared to DL model.
+          </>
+        );
+      } else {
+        return(
+          <>
+          <span className="font-bold text-blue-800">Best for:</span> Detecting
+          <span className="font-semibold text-blue-700"> Mature</span> stage
+          <br />Decent performance on
+          <span className="font-semibold text-blue-700"> Spawning</span> and 
+          <span className="font-semibold text-blue-700"> Spent</span> stages.
+          </>
+        );
+      }
+    } else {
+      if (sex === "male") {
+        return(
+          <>
+          <span className="font-bold text-blue-800">Best for:</span> Detecting
+          <span className="font-semibold text-blue-700"> Mature</span> and 
+          <span className="font-semibold text-blue-700"> Spawning</span> stages.
+          </>
+        );
+      } else {
+        return(
+          <>
+          <span className="font-bold text-blue-800">Best for:</span> Detecting
+          <span className="font-semibold text-blue-700"> Developing</span> and 
+          <span className="font-semibold text-blue-700"> Mature</span> stages.
+          <br />Performs better on <span className="font-bold text-blue-800">Mature stage</span> compared to ML model.
+          </>
+        );
+      }
+    }
+  };
+
   return (
     <div className="w-3/4 lg:w-2/3 mx-auto p-8shadow-2xl rounded-3xl">
       {isFullscreen && preview && (
@@ -195,6 +239,7 @@ export default function UploadForm() {
               </div>
             </div>
           )}
+          {/* Model Selection */}
           <div className="mb-6 animate-in fade-in duration-500">
             <p className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-widest">Select Classifier Engine:</p>
             <div className="flex p-1 bg-gray-100 rounded-2xl border border-gray-200">
@@ -206,7 +251,7 @@ export default function UploadForm() {
                   : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                {sex === "male" ? "ML (XGBOOST)" : "ML (GRADIENT BOOSTING)"}
+                {sex === "male" ? "ML (XGBOOST)" : "ML (XGBOOST)"}
               </button>
               <button
                 onClick={() => setModelChoice("dl")}
@@ -218,6 +263,13 @@ export default function UploadForm() {
               >
                 {sex === "male" ? "DL (EFFNET-B0)" : "DL (RESNET-50)"}
               </button>
+            </div>
+            {/* Model Strength */}
+            <div className="mt-3 p-3 bg-blue-50/50 border border-blue-100 rounded-xl flex items-start gap-2 animate-in slide-in-from-top-1 duration-300">
+              <span className="text-blue-500 mt-0.5">💡</span>
+              <p className="text-[11px] leading-relaxed text-blue-600 italic">
+                {getModelDescription()}
+              </p>
             </div>
           </div>
           {/* Analyze */}

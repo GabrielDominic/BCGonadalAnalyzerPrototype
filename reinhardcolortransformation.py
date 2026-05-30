@@ -2,7 +2,7 @@ import numpy as np
 import cv2 
 import os 
 
-# input_dir = 'imagedataset/M/spent'
+# input_dir = 'imagedataset/M/spent' Change to the directory of the images you want to normalize
 input_dir = 'D:\\SP\\BCDataset15-4-2026\\M\\mature'
 input_image_list = os.listdir(input_dir)
 output_dir = 'normalized_updated_dataset/M/maturing'

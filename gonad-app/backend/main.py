@@ -41,14 +41,21 @@ device = torch.device("cpu")
 # ── Model loading 
 try:
     #ML Models
-    # MODEL_F = pickle.load(open("best_xgb_model_F.pickle", "rb"))
-    MODEL_F = pickle.load(open("best_gb_model_F(Balanced).pickle", "rb"))
+    MODEL_F = pickle.load(open("best_xgb_model_F.pickle", "rb"))
+    # MODEL_F = pickle.load(open("best_gb_model_F.pickle", "rb"))
     # MODEL_F = pickle.load(open("best_svc_model_F.pickle", "rb"))
-    MODEL_M = pickle.load(open("best_xgb_model_M.pickle", "rb"))
-    
+    # MODEL_M = pickle.load(open("best_xgb_model_M.pickle", "rb"))
+    #MALE
+    xgb_m_path = get_path("mlmodels/best_xgb_model_M.pickle")
+    gb_m_path = get_path("mlmodels/best_gb_model_M.pickle")
+    svc_m_path = get_path("mlmodels/best_svc_model_M.pickle")
+    rfmodel_m_path = get_path("mlmodels/best_rf_model_M.pickle")
+    #Current Model
+    MODEL_M = pickle.load(open(xgb_m_path, "rb"))
+
     #Bouncer Models
     BOUNCER_M = joblib.load("histology_bouncer_male.joblib")
-    BOUNCER_F = joblib.load("histology_bouncer_female[Balanced].joblib")
+    BOUNCER_F = joblib.load("histology_bouncer_female.joblib")
     print("ML Models and Bouncers loaded successfully.")
 except Exception as e:
     print(f"[ERROR] Failed to load ML models: {e}")
@@ -56,7 +63,21 @@ except Exception as e:
 
 try:
     #DL Models
-    #MALE MODEL: EfficientNet-B0
+    #MALE MODEL
+    #RESNET-50 MALE
+    DL_MODEL_M_RN = models.resnet50(weights=None)
+    num_features = DL_MODEL_M_RN.fc.in_features
+    DL_MODEL_M_RN.fc = nn.Sequential(
+        nn.Dropout(p=0.3),
+        nn.Linear(num_features, 256),
+        nn.ReLU(),
+        nn.Dropout(p=0.2),
+        nn.Linear(256, 4)
+    )
+    RN_m_path = get_path("dlmodels/male_best_model_resnet50.pth")
+    DL_MODEL_M_RN.load_state_dict(torch.load(RN_m_path, map_location='cpu'))
+    DL_MODEL_M_RN.eval()
+    #EFFNET-B0 MALE
     DL_MODEL_M = models.efficientnet_b0(weights=None)
     in_features = DL_MODEL_M.classifier[1].in_features
     DL_MODEL_M.classifier = nn.Sequential(
@@ -66,24 +87,36 @@ try:
         nn.Dropout(p=0.2),
         nn.Linear(256, 4)
     )
-    m_path = get_path("dlmodels/male_best_model_efficientnet_b0.pth")
-    DL_MODEL_M.load_state_dict(torch.load(m_path, map_location='cpu'))
+    EN_m_path = get_path("dlmodels/male_best_model_efficientnet_b0.pth")
+    DL_MODEL_M.load_state_dict(torch.load(EN_m_path, map_location='cpu'))
     DL_MODEL_M.eval()
 
-    #FEMALE MODEL: ResNet-50
-    DL_MODEL_F = models.resnet50(weights=None)
-    num_features = DL_MODEL_F.fc.in_features
-    DL_MODEL_F.fc = nn.Sequential(
+    #FEMALE MODEL: 
+    #EFFNET-B0 FEMALE
+    DL_MODEL_F = models.efficientnet_b0(weights=None)
+    in_features = DL_MODEL_F.classifier[1].in_features
+    DL_MODEL_F.classifier = nn.Sequential(
+        nn.Dropout(p=0.3),
+        nn.Linear(in_features, 256),
+        nn.ReLU(),
+        nn.Dropout(p=0.2),
+        nn.Linear(256, 4)
+    )
+    f_path = get_path("dlmodels/female_best_model_efficientnet_b0.pth")
+    #loading Weights
+    DL_MODEL_F.load_state_dict(torch.load(f_path, map_location='cpu'))
+    DL_MODEL_F.eval()
+    #RESNET-50 FEMALE
+    DL_MODEL_F_RN = models.resnet50(weights=None)
+    num_features = DL_MODEL_F_RN.fc.in_features
+    DL_MODEL_F_RN.fc = nn.Sequential(
         nn.Dropout(p=0.3),
         nn.Linear(num_features, 256),
         nn.ReLU(),
         nn.Dropout(p=0.2),
         nn.Linear(256, 4)
     )
-    f_path = get_path("dlmodels/female_best_model_resnet50.pth")
-    #loading Weights
-    DL_MODEL_F.load_state_dict(torch.load(f_path, map_location='cpu'))
-    DL_MODEL_F.eval()
+    
     print("DL Models loaded successfully.")
 except Exception as e:
     print(f"[ERROR] Failed to load DL models: {e}")
@@ -108,8 +141,8 @@ transform = transforms.Compose([
 #     print(f"[WARN] Model file '{MODEL_PATH}' not found. /predict will fail until model is present.")
 #     MODEL = None
 
-MALE_CATEGORIES   = ["developing", "maturing", "spawning", "spent"]
-FEMALE_CATEGORIES = ["developing", "maturing", "spawning", "spent"]
+MALE_CATEGORIES   = ["developing", "mature", "spawning", "spent"]
+FEMALE_CATEGORIES = ["developing", "mature", "spawning", "spent"]
 
 GLCM_NAMES  = ["contrast_mean","contrast_std","homogeneity_mean","homogeneity_std",
                 "energy_mean","energy_std","correlation_mean","correlation_std"]
@@ -318,9 +351,11 @@ async def predict(
         # if CURRENT_BOUNCER.predict(fv_2d)[0] == -1:
         #     raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")
         # if CURRENT_BOUNCER == BOUNCER_M and anomaly_score < 0.065:
-            # raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")
-        if CURRENT_BOUNCER == BOUNCER_F and anomaly_score < 0.05:
-            pass   
+            # 
+        if CURRENT_BOUNCER == BOUNCER_F and anomaly_score < -0.04:
+            raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")
+        if CURRENT_BOUNCER == BOUNCER_M and anomaly_score < 0.005:
+            raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")   
         # if anomaly_score < 0.065:
         
         # Prediction
