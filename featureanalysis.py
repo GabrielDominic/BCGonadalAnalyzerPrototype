@@ -238,7 +238,8 @@ def analyze_GAF_mean(pickle_file):
         # print(f'  gamete_area_fraction: {std_area_fraction:.4f}\n')
 
 #Change Name to corresponding extracted features file
-pickle_file = 'CTGAFmaleupdatedFeatures.pickle' #Male Samples
+# pickle_file = 'CTGAFmaleupdatedFeatures.pickle' #Male Samples
+pickle_file = 'FemaleFeatures[Balanced].pickle' #Female Samples
 
 analyze_features_stat(pickle_file)
 analyze_GLCM_mean(pickle_file)

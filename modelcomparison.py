@@ -17,23 +17,19 @@ from imblearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report
 
-categories = ['developing', 'mature', 'spawning', 'spent']
+categories = ['developing', 'maturing', 'spawning', 'spent']
 
 # Load saved features
 
 data = []
 
-# files = ['completefemalefeaturefile.pickle', 'femalefeaturefile.pickle']
-
 # for fname in files:
 #     with open(fname, 'rb') as f:
 #         data.extend(pickle.load(f))  # combine datasets
 
-pick_in = open('FemaleFeatures[Balanced].pickle', 'rb')
-# #No Color Moments
-# # pick_in = open('NoColorMmaleupdatedFeatures.pickle', 'rb')
-
-# pick_in = open('finalfemalefeaturefile.pickle', 'rb')
+# pick_in = open('FemaleFeatures[Balanced].pickle', 'rb')
+pick_in = open('CTGAFmaleupdatedFeatures.pickle', 'rb')     #Final Extracted features for Male dataset
+# pick_in = open('finalfemalefeaturefile.pickle', 'rb')     #Final Extracted features for Female dataset
 data = pickle.load(pick_in)
 pick_in.close()
 
@@ -246,10 +242,21 @@ test_evaluate("MLP", best_mlp_model)
 test_evaluate("Gradient Boosting", best_gb_model)
 test_evaluate("XGBoost", best_xgb_model)
 
-# with open('best_xgb_model_M.pickle', 'wb') as f:
-#     pickle.dump(best_xgb_model, f)
+with open('best_xgb_model_M.pickle', 'wb') as f:
+    pickle.dump(best_xgb_model, f)
 
-# print("XGBoost model saved to best_xgb_model_M.pickle")
+print("XGBoost model saved to best_xgb_model_M.pickle")
+
+with open('best_gb_model_M.pickle', 'wb') as f:
+    pickle.dump(best_gb_model, f)
+print("Gradient Boosting model saved to best_gb_model_M.pickle")
+
+with open('best_svc_model_M.pickle', 'wb') as f:
+    pickle.dump(best_svc_model, f)
+print("SVC model saved to best_svc_model_M.pickle")
+
+with open('best_rf_model_M.pickle', 'wb') as f:
+    pickle.dump(best_rf_model, f)
 
 #Confusion Matrix
 ConfusionMatrixDisplay.from_estimator(best_svc_model, xtest, ytest, display_labels=categories, cmap=plt.cm.Blues)
@@ -271,8 +278,8 @@ plt.show()
 
 import pandas as pd
 
-# feature importance from the Gradient Boosting step of the pipeline
-importances = best_gb_model.named_steps['Gradient Boosting'].feature_importances_
+# feature importance from the XGBoost step of the pipeline
+importances = best_xgb_model.named_steps['XGBoost'].feature_importances_
 
 # list of feature names in the order they are concatenated
 glcm_names = ['contrast_mean', 'contrast_std', 'homogeneity_mean', 'homogeneity_std', 

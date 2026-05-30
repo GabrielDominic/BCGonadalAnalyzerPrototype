@@ -10,6 +10,7 @@ export default function UploadForm() {
   const [result, setResult] = useState<any>(null);
   const [isFullscreen, setisFullscreen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modelChoice, setModelChoice] = useState<"ml" | "dl">("ml");
 
   useEffect (() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -56,12 +57,17 @@ export default function UploadForm() {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("sex", sex);
+    formData.append("model_choice", modelChoice);
 
     try {
       const res = await fetch("/api/predict", {
         method: "POST",
         body: formData,
       });
+      const contentType = res.headers.get("content-Type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Server returned a non-JSON response. Is the API route correct?");
+      }
       const data = await res.json();
 
       if (!res.ok) {
@@ -72,9 +78,9 @@ export default function UploadForm() {
       }
 
       setResult(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error processing image");
+      setError( err.message || "An error occurred while processing the image. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -84,6 +90,50 @@ export default function UploadForm() {
     setFile(null);
     setPreview(null);
     setResult(null);
+  };
+
+  const getModelDescription = () => {
+    if (modelChoice === "ml") {
+      if (sex === "male") {
+        return(
+          <>
+          <span className="font-bold text-blue-800">Best for:</span> Detecting
+          <span className="font-semibold text-blue-700"> Mature</span> and 
+          <span className="font-semibold text-blue-700"> Spent</span> stages.
+          <br />Better at detecting <span className="font-bold text-blue-800">Developing stage</span> compared to DL model.
+          </>
+        );
+      } else {
+        return(
+          <>
+          <span className="font-bold text-blue-800">Best for:</span> Detecting
+          <span className="font-semibold text-blue-700"> Mature</span> stage
+          <br />Decent performance on
+          <span className="font-semibold text-blue-700"> Spawning</span> and 
+          <span className="font-semibold text-blue-700"> Spent</span> stages.
+          </>
+        );
+      }
+    } else {
+      if (sex === "male") {
+        return(
+          <>
+          <span className="font-bold text-blue-800">Best for:</span> Detecting
+          <span className="font-semibold text-blue-700"> Mature</span> and 
+          <span className="font-semibold text-blue-700"> Spawning</span> stages.
+          </>
+        );
+      } else {
+        return(
+          <>
+          <span className="font-bold text-blue-800">Best for:</span> Detecting
+          <span className="font-semibold text-blue-700"> Developing</span> and 
+          <span className="font-semibold text-blue-700"> Mature</span> stages.
+          <br />Performs better on <span className="font-bold text-blue-800">Mature stage</span> compared to ML model.
+          </>
+        );
+      }
+    }
   };
 
   return (
@@ -189,6 +239,39 @@ export default function UploadForm() {
               </div>
             </div>
           )}
+          {/* Model Selection */}
+          <div className="mb-6 animate-in fade-in duration-500">
+            <p className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-widest">Select Classifier Engine:</p>
+            <div className="flex p-1 bg-gray-100 rounded-2xl border border-gray-200">
+              <button
+                onClick={() => setModelChoice("ml")}
+                className={`flex-1 py-2 px-4 rounded-xl text-sm font-bold transition-all ${
+                  modelChoice === "ml" 
+                  ? "bg-white text-blue-600 shadow-sm" 
+                  : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {sex === "male" ? "ML (XGBOOST)" : "ML (XGBOOST)"}
+              </button>
+              <button
+                onClick={() => setModelChoice("dl")}
+                className={`flex-1 py-2 px-4 rounded-xl text-sm font-bold transition-all ${
+                  modelChoice === "dl"
+                  ? "bg-white text-blue-600 shadow-sm" 
+                  : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {sex === "male" ? "DL (EFFNET-B0)" : "DL (RESNET-50)"}
+              </button>
+            </div>
+            {/* Model Strength */}
+            <div className="mt-3 p-3 bg-blue-50/50 border border-blue-100 rounded-xl flex items-start gap-2 animate-in slide-in-from-top-1 duration-300">
+              <span className="text-blue-500 mt-0.5">💡</span>
+              <p className="text-[11px] leading-relaxed text-blue-600 italic">
+                {getModelDescription()}
+              </p>
+            </div>
+          </div>
           {/* Analyze */}
           <button
             onClick={handleSubmit}

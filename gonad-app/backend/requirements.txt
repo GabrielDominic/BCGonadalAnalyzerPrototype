@@ -10,3 +10,5 @@ pillow
 pandas
 scipy
 python-multipart
+torch
+torchvision
