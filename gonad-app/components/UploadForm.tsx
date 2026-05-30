@@ -13,6 +13,9 @@ export default function UploadForm() {
   const [modelChoice, setModelChoice] = useState<"ml" | "dl">("ml");
 
   useEffect (() => {
+    // Wake up Backend
+    fetch("api/health").catch(() => {});
+
     const handleEsc = (e: KeyboardEvent) => {
       if(e.key === "Escape")
         setisFullscreen(false);
