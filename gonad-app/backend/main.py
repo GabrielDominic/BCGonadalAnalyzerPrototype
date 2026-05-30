@@ -20,12 +20,12 @@ app = FastAPI(title="BC Gonadal Stage Analyzer API", version="1.0.0")
 
 origins = [
     "http://localhost:3000",
-    "https://your-app-name.vercel.app", 
+    "https://bc-gonadal-analyzer-prototype.vercel.app", 
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],   # adjust for production
+    allow_origins=origins,   # adjust for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

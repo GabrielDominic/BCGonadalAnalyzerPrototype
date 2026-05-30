@@ -6,8 +6,7 @@ const nextConfig: NextConfig = {
       {
         source: "/api/:path*",
         destination: process.env.NODE_ENV === "development" 
-        ? "http://localhost:8000/api/:path*" :
-        https://gonadal-analyzer-backend.onrender.com/api/:path*",
+        ? "http://localhost:8000/:path*" : "https://your-backend-service.onrender.com/:path*",
       },
     ];
   } 
