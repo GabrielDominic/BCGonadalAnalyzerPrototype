@@ -1,0 +1,14 @@
+backend/
+.env.local
+.env.*.local
+*.py
+requirements.txt
+__pycache__
+.git
+.gitignore
+node_modules
+.next
+*.pth
+*.joblib
+*.pickle
+.DS_Store
