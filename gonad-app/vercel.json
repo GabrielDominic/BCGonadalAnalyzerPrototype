@@ -1,13 +1,5 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "framework": "nextjs",
-  "env": {
-    "NEXT_PUBLIC_API_URL": {
-      "description": "API Base URL for frontend"
-    },
-    "BACKEND_URL": {
-      "description": "Backend API URL (should be your Render deployment URL)"
-    }
-  }
+  "framework": "nextjs"
 }
