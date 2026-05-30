@@ -20,7 +20,7 @@ app = FastAPI(title="BC Gonadal Stage Analyzer API", version="1.0.0")
 
 origins = [
     "http://localhost:3000",
-    "https://gonad-app-abcde.vercel.app", 
+    "https://bc-gonadal-analyzer-prototype.vercel.app", 
 ]
 
 app.add_middleware(
