@@ -6,11 +6,13 @@ const nextConfig: NextConfig = {
   },
 
   async rewrites() {
+    const backendUrl = process.env.BACKEND_URL || "https://bcgonadalanalyzerprototype.onrender.com";
+    
     return [
       {
         source: "/api/:path*",
         destination: process.env.NODE_ENV === "development" 
-        ? "http://127.0.0.1:8000/:path*" : `${process.env.BACKEND_URL}/:path*`,
+        ? "http://127.0.0.1:8000/:path*" : `${backendUrl}/:path*`,
       },
     ];
   } 
