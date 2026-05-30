@@ -47,9 +47,9 @@ try:
     # MODEL_M = pickle.load(open("best_xgb_model_M.pickle", "rb"))
     #MALE
     xgb_m_path = get_path("mlmodels/best_xgb_model_M.pickle")
-    gb_m_path = get_path("mlmodels/best_gb_model_M.pickle")
-    svc_m_path = get_path("mlmodels/best_svc_model_M.pickle")
-    rfmodel_m_path = get_path("mlmodels/best_rf_model_M.pickle")
+    # gb_m_path = get_path("mlmodels/best_gb_model_M.pickle")
+    # svc_m_path = get_path("mlmodels/best_svc_model_M.pickle")
+    # rfmodel_m_path = get_path("mlmodels/best_rf_model_M.pickle")
     #Current Model
     MODEL_M = pickle.load(open(xgb_m_path, "rb"))
 
@@ -65,18 +65,18 @@ try:
     #DL Models
     #MALE MODEL
     #RESNET-50 MALE
-    DL_MODEL_M_RN = models.resnet50(weights=None)
-    num_features = DL_MODEL_M_RN.fc.in_features
-    DL_MODEL_M_RN.fc = nn.Sequential(
-        nn.Dropout(p=0.3),
-        nn.Linear(num_features, 256),
-        nn.ReLU(),
-        nn.Dropout(p=0.2),
-        nn.Linear(256, 4)
-    )
-    RN_m_path = get_path("dlmodels/male_best_model_resnet50.pth")
-    DL_MODEL_M_RN.load_state_dict(torch.load(RN_m_path, map_location='cpu'))
-    DL_MODEL_M_RN.eval()
+    # DL_MODEL_M_RN = models.resnet50(weights=None)
+    # num_features = DL_MODEL_M_RN.fc.in_features
+    # DL_MODEL_M_RN.fc = nn.Sequential(
+    #     nn.Dropout(p=0.3),
+    #     nn.Linear(num_features, 256),
+    #     nn.ReLU(),
+    #     nn.Dropout(p=0.2),
+    #     nn.Linear(256, 4)
+    # )
+    # RN_m_path = get_path("dlmodels/male_best_model_resnet50.pth")
+    # DL_MODEL_M_RN.load_state_dict(torch.load(RN_m_path, map_location='cpu'))
+    # DL_MODEL_M_RN.eval()
     #EFFNET-B0 MALE
     DL_MODEL_M = models.efficientnet_b0(weights=None)
     in_features = DL_MODEL_M.classifier[1].in_features
@@ -93,29 +93,29 @@ try:
 
     #FEMALE MODEL: 
     #EFFNET-B0 FEMALE
-    DL_MODEL_F = models.efficientnet_b0(weights=None)
-    in_features = DL_MODEL_F.classifier[1].in_features
-    DL_MODEL_F.classifier = nn.Sequential(
-        nn.Dropout(p=0.3),
-        nn.Linear(in_features, 256),
-        nn.ReLU(),
-        nn.Dropout(p=0.2),
-        nn.Linear(256, 4)
-    )
-    f_path = get_path("dlmodels/female_best_model_efficientnet_b0.pth")
-    #loading Weights
-    DL_MODEL_F.load_state_dict(torch.load(f_path, map_location='cpu'))
-    DL_MODEL_F.eval()
+    # DL_MODEL_F = models.efficientnet_b0(weights=None)
+    # in_features = DL_MODEL_F.classifier[1].in_features
+    # DL_MODEL_F.classifier = nn.Sequential(
+    #     nn.Dropout(p=0.3),
+    #     nn.Linear(in_features, 256),
+    #     nn.ReLU(),
+    #     nn.Dropout(p=0.2),
+    #     nn.Linear(256, 4)
+    # )
     #RESNET-50 FEMALE
-    DL_MODEL_F_RN = models.resnet50(weights=None)
-    num_features = DL_MODEL_F_RN.fc.in_features
-    DL_MODEL_F_RN.fc = nn.Sequential(
+    DL_MODEL_F = models.resnet50(weights=None)
+    num_features = DL_MODEL_F.fc.in_features
+    DL_MODEL_F.fc = nn.Sequential(
         nn.Dropout(p=0.3),
         nn.Linear(num_features, 256),
         nn.ReLU(),
         nn.Dropout(p=0.2),
         nn.Linear(256, 4)
     )
+    f_path = get_path("dlmodels/female_best_model_resnet50.pth")
+    #loading Weights
+    DL_MODEL_F.load_state_dict(torch.load(f_path, map_location='cpu'))
+    DL_MODEL_F.eval()
     
     print("DL Models loaded successfully.")
 except Exception as e:

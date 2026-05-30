@@ -14,7 +14,7 @@ export default function UploadForm() {
 
   useEffect (() => {
     // Wake up Backend
-    fetch("api/health").catch(() => {});
+    fetch("/api/health").catch(() => {});
 
     const handleEsc = (e: KeyboardEvent) => {
       if(e.key === "Escape")
