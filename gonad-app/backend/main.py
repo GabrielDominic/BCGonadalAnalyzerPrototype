@@ -1,10 +1,10 @@
 import pickle
-import torch
-from torchvision import models, transforms
-from PIL import Image
-import torch.nn as nn
-import numpy as np
+import gc
 import cv2
+import joblib
+import os
+import numpy as np
+import onnxruntime as ort
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -17,6 +17,34 @@ import os
 
 # ── App setup 
 app = FastAPI(title="BC Gonadal Stage Analyzer API", version="1.0.0")
+
+class ModelManager:
+    def __init__(self):
+        self.active_model = None
+        self.active_key = None
+
+    def load(self, key, path, is_onnx=False):
+        if self.active_key == key:
+            return self.active_model
+
+        #clear previous model
+        self.active_model = None
+        self.active_key = None
+        gc.collect()
+
+        print(f"Loading {key} ...")
+        if is_onnx:
+            opts = ort.SessionOptions()
+            opts.intra_op_num_threads = 1
+            self.active_model = ort.InferenceSession(path, sess_options=opts)
+        
+        else:
+            self.active_model = joblib.load(path)
+
+        self.active_key = key
+        return self.active_model
+
+model_manager = ModelManager()
 
 origins = [
     "http://localhost:3000",
@@ -36,111 +64,20 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 def get_path(relative_path: str):
     return os.path.join(BASE_DIR, relative_path)
 
-device = torch.device("cpu")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# ── Model loading 
-try:
-    #ML Models
-    xgb_f_path = get_path("mlmodels/best_xgb_model_F.pickle")
-    MODEL_F = pickle.load(open(xgb_f_path, "rb"))
-    # MODEL_F = pickle.load(open("best_gb_model_F.pickle", "rb"))
-    # MODEL_F = pickle.load(open("best_svc_model_F.pickle", "rb"))
-    # MODEL_M = pickle.load(open("best_xgb_model_M.pickle", "rb"))
-    #MALE
-    xgb_m_path = get_path("mlmodels/best_xgb_model_M.pickle")
-    # gb_m_path = get_path("mlmodels/best_gb_model_M.pickle")
-    # svc_m_path = get_path("mlmodels/best_svc_model_M.pickle")
-    # rfmodel_m_path = get_path("mlmodels/best_rf_model_M.pickle")
-    #Current Model
-    MODEL_M = pickle.load(open(xgb_m_path, "rb"))
+def get_path(relative_path: str):
+    return os.path.join(BASE_DIR, relative_path)
 
-    #Bouncer Models
-    BOUNCER_M = joblib.load("histology_bouncer_male.joblib")
-    BOUNCER_F = joblib.load("histology_bouncer_female.joblib")
-    print("ML Models and Bouncers loaded successfully.")
-except Exception as e:
-    print(f"[ERROR] Failed to load ML models: {e}")
-    MODEL_F = MODEL_M = BOUNCER_F = BOUNCER_M = None
-
-try:
-    #DL Models
-    #MALE MODEL
-    #RESNET-50 MALE
-    # DL_MODEL_M_RN = models.resnet50(weights=None)
-    # num_features = DL_MODEL_M_RN.fc.in_features
-    # DL_MODEL_M_RN.fc = nn.Sequential(
-    #     nn.Dropout(p=0.3),
-    #     nn.Linear(num_features, 256),
-    #     nn.ReLU(),
-    #     nn.Dropout(p=0.2),
-    #     nn.Linear(256, 4)
-    # )
-    # RN_m_path = get_path("dlmodels/male_best_model_resnet50.pth")
-    # DL_MODEL_M_RN.load_state_dict(torch.load(RN_m_path, map_location='cpu'))
-    # DL_MODEL_M_RN.eval()
-    #EFFNET-B0 MALE
-    DL_MODEL_M = models.efficientnet_b0(weights=None)
-    in_features = DL_MODEL_M.classifier[1].in_features
-    DL_MODEL_M.classifier = nn.Sequential(
-        nn.Dropout(p=0.3),
-        nn.Linear(in_features, 256),
-        nn.ReLU(),
-        nn.Dropout(p=0.2),
-        nn.Linear(256, 4)
-    )
-    EN_m_path = get_path("dlmodels/male_best_model_efficientnet_b0.pth")
-    DL_MODEL_M.load_state_dict(torch.load(EN_m_path, map_location='cpu'))
-    DL_MODEL_M.eval()
-
-    #FEMALE MODEL: 
-    #EFFNET-B0 FEMALE
-    # DL_MODEL_F = models.efficientnet_b0(weights=None)
-    # in_features = DL_MODEL_F.classifier[1].in_features
-    # DL_MODEL_F.classifier = nn.Sequential(
-    #     nn.Dropout(p=0.3),
-    #     nn.Linear(in_features, 256),
-    #     nn.ReLU(),
-    #     nn.Dropout(p=0.2),
-    #     nn.Linear(256, 4)
-    # )
-    #RESNET-50 FEMALE
-    DL_MODEL_F = models.resnet50(weights=None)
-    num_features = DL_MODEL_F.fc.in_features
-    DL_MODEL_F.fc = nn.Sequential(
-        nn.Dropout(p=0.3),
-        nn.Linear(num_features, 256),
-        nn.ReLU(),
-        nn.Dropout(p=0.2),
-        nn.Linear(256, 4)
-    )
-    f_path = get_path("dlmodels/female_best_model_resnet50.pth")
-    #loading Weights
-    DL_MODEL_F.load_state_dict(torch.load(f_path, map_location='cpu'))
-    DL_MODEL_F.eval()
-    
-    print("DL Models loaded successfully.")
-except Exception as e:
-    print(f"[ERROR] Failed to load DL models: {e}")
-    DL_MODEL_M = DL_MODEL_F = None
-
-#Transform Pipelines for DL Models
-transform = transforms.Compose([
-    transforms.ToPILImage(),
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], 
-        std=[0.229, 0.224, 0.225]
-    )
-])
-
-# try:
-#     with open(MODEL_PATH, "rb") as f:
-#         MODEL = pickle.load(f)
-#     print(f"[OK] Model loaded from {MODEL_PATH}")
-# except FileNotFoundError:
-#     print(f"[WARN] Model file '{MODEL_PATH}' not found. /predict will fail until model is present.")
-#     MODEL = None
+def preprocess_for_onnx(img_bgr):
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    img_resized = cv2.resize(img_rgb, (224, 224))
+    img_normalized = img_resized.astype(np.float32) / 255.0
+    mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+    std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+    img_normalized = (img_normalized - mean) / std
+    img_transposed = np.transpose(img_normalized, (2, 0, 1))
+    return np.expand_dims(img_transposed, axis=0).astype(np.float32)
 
 MALE_CATEGORIES   = ["developing", "mature", "spawning", "spent"]
 FEMALE_CATEGORIES = ["developing", "mature", "spawning", "spent"]
@@ -156,19 +93,22 @@ GAMETE_NAMES= ["total_tissue_pixels","gamete_pixels","area_fraction"]
 ALL_FEATURE_NAMES = GLCM_NAMES + LBP_NAMES + CM_NAMES + MORPH_NAMES + EDGE_NAMES + GAMETE_NAMES
 
 def predict_dl(img_bgr, sex):
-    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-    img_tensor = transform(img_rgb).unsqueeze(0)  # Add batch dimension
-    with torch.no_grad():
-        if sex == "M":
-            outputs = DL_MODEL_M(img_tensor)
-        if sex == "F":
-            outputs = DL_MODEL_F(img_tensor)
-        
-        probabilities = torch.softmax(outputs, dim=1).cpu()
-        predicted_idx = torch.argmax(probabilities, dim=1).item()
-        confidence = probabilities[0, predicted_idx].item()
-    
-    return predicted_idx, confidence, probabilities[0].cpu().numpy()
+    input_data = preprocess_for_onnx(img_bgr)
+    if sex == "M":
+        path = os.path.join(BASE_DIR, f"dlmodels/male_model.onnx")
+    else:
+        path = os.path.join(BASE_DIR, f"dlmodels/female_model.onnx")
+    session = model_manager.load(f"dl_{sex}", path, is_onnx=True)
+
+    raw_outputs = session.run(None, {session.get_inputs()[0].name: input_data})[0]
+    shifted_exp = np.exp(raw_outputs - np.max(raw_outputs))
+    probabilities = shifted_exp / np.sum(shifted_exp)
+
+    proba_array = probabilities[0]
+    pred_idx = np.argmax(proba_array)
+    confidence = float(proba_array[pred_idx])
+
+    return pred_idx, confidence, proba_array
 
 def extract_glcm(img_gray: np.ndarray) -> np.ndarray:
     glcm = graycomatrix(
@@ -275,9 +215,7 @@ class PredictionResponse(BaseModel):
 @app.get("/health")
 def health():
     return {
-        "status": "ok",
-        "model_F_loaded": MODEL_F is not None,
-        "model_M_loaded": MODEL_M is not None
+        "status": "ok"
     }
 
 @app.post("/predict", response_model=PredictionResponse)
@@ -311,62 +249,38 @@ async def predict(
     img_norm = reinhard_normalization(img_bgr, ref_path)
     categories = MALE_CATEGORIES if sex == "M" else FEMALE_CATEGORIES
 
+    groups: List[FeatureGroup] = []
+    predicted_stage = ""
+    confidence = 0.0
+    probabilities = {}
+
     #DL Path
     if model_choice.upper() == "DL":
-        if DL_MODEL_M is None or DL_MODEL_F is None:
-            raise HTTPException(status_code=503, detail="DL Models not loaded.")
-
-        pred_idx, confidence, proba = predict_dl(img_norm, sex)
+        pred_idx, confidence, proba_array = predict_dl(img_norm, sex)
         predicted_stage = categories[pred_idx]
-        probabilities = {cat: float(p) for cat, p in zip(categories, proba)} 
-        groups = []  
+        probabilities = {cat: float(p) for cat, p in zip(categories, proba_array)}
     
+    #ML Path
     else:
-
-        #ML Path
-        MODEL = MODEL_M if sex == "M" else MODEL_F
-
-        if MODEL is None:
-            raise HTTPException(status_code=503, detail="Model not loaded.")
-
-        #Bouncer Check for Anomaly Detection
-        if sex.upper() in ["M", "MALE"]:
-            CURRENT_BOUNCER = BOUNCER_M
-            CURRENT_MODEL = MODEL_M
-        else:
-            CURRENT_BOUNCER = BOUNCER_F
-            CURRENT_MODEL = MODEL_F
-
-        # Feature extraction
-        try:
-            fv = build_feature_vector(img_norm, sex)
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Feature extraction failed: {e}")
-
-        #ML Prediction
+        bouncer_path = f"histology_bouncer_{'male' if sex == 'M' else 'female'}.joblib"
+        bouncer = model_manager.load(f"bouncer_{sex}", bouncer_path)
+        fv = build_feature_vector(img_norm, sex)
         fv_2d = fv.reshape(1, -1)
-        # Check Anomalies with Bouncer
-        anomaly_score = CURRENT_BOUNCER.decision_function(fv_2d)[0]
-        print(f"Anomaly Score: {anomaly_score:.4f}")
-        
-        # if CURRENT_BOUNCER.predict(fv_2d)[0] == -1:
-        #     raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")
-        # if CURRENT_BOUNCER == BOUNCER_M and anomaly_score < 0.065:
-            # 
-        if CURRENT_BOUNCER == BOUNCER_F and anomaly_score < -0.04:
-            raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")
-        if CURRENT_BOUNCER == BOUNCER_M and anomaly_score < 0.005:
-            raise HTTPException(status_code=400, detail="Invalid histology image for the selected sex. Please check quality and try again.")   
-        # if anomaly_score < 0.065:
-        
-        # Prediction
-        pred_idx   = int(MODEL.predict(fv_2d)[0])
-        proba      = MODEL.predict_proba(fv_2d)[0]
 
-        categories = MALE_CATEGORIES if sex == "M" else FEMALE_CATEGORIES
+        #anomaly check
+
+        #LOAD ML CLassifier
+        if sex == "M":
+            xgb_path = os.path.join(BASE_DIR, "mlmodels/best_xgb_model_M.pickle")
+        else:
+            xgb_path = os.path.join(BASE_DIR, "mlmodels/best_xgb_model_F.pickle")
+        model = model_manager.load(f"ML_{sex}", xgb_path)
+
+        proba = model.predict_proba(fv_2d)[0]
+        pred_idx = int(np.argmax(proba))
         predicted_stage = categories[pred_idx]
-        confidence      = float(proba[pred_idx])
-        probabilities   = {cat: float(p) for cat, p in zip(categories, proba)}
+        confidence = float(proba[pred_idx])
+        probabilities = {cat: float(p) for cat, p in zip(categories, proba)}
 
         # Build feature groups for the frontend
         fv_list = fv.tolist()

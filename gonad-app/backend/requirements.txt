@@ -1,17 +1,11 @@
 fastapi
 uvicorn
+python-multipart
 numpy
 opencv-python-headless
 pydantic
 xgboost
-imbalanced-learn
-pillow
-pandas
-python-multipart
-seaborn
-scikit-image
 scikit-learn
-scipy
-torch --index-url https://download.pytorch.org/whl/cpu
-torchvision --index-url https://download.pytorch.org/whl/cpu
-torchaudio
+scikit-image
+onnxruntime-cpu
+joblib

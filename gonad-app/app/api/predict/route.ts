@@ -4,7 +4,7 @@ export async function POST(req: NextRequest) {
   try{
 
     const formData = await req.formData();
-    const BACKEND_URL = process.env.BACKEND_URL || "http://http://127.0.0.1:8000/predict";
+    const BACKEND_URL = process.env.BACKEND_URL || "http://127.0.0.1:8000";
   
     const res = await fetch(`${BACKEND_URL}/predict`, {
       method: "POST",
