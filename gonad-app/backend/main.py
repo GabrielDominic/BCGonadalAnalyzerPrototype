@@ -48,7 +48,7 @@ model_manager = ModelManager()
 
 origins = [
     "http://localhost:3000",
-    "https://bc-gonadal-analyzer-prototype.vercel.app", 
+    "https://bcgonadalanalyzerprototype.onrender.com", 
 ]
 
 app.add_middleware(
