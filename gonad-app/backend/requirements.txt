@@ -7,5 +7,5 @@ pydantic
 xgboost
 scikit-learn
 scikit-image
-onnxruntime-cpu
+onnxruntime
 joblib
