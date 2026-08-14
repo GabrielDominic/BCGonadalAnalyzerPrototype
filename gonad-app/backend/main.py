@@ -212,6 +212,17 @@ class PredictionResponse(BaseModel):
     probabilities: Dict[str, float]
     feature_groups: List[FeatureGroup]
 
+@app.get("/")
+def read_root():
+    return {
+        "status": "online",
+        "message": "BC Gonadal Stage Analyzer API is operational",
+        "available_endpoints": {
+            "analysis": "/predict (POST)",
+            "health_check": "/health (GET)"
+        }
+    }
+
 @app.get("/health")
 def health():
     return {
